@@ -1,0 +1,499 @@
+package com.example.rpgstats.client.ui
+
+import com.example.rpgstats.client.cache.ClientCache
+import com.example.rpgstats.client.cache.ClientStatDef
+import com.example.rpgstats.common.network.Network
+import com.example.rpgstats.common.network.packets.C2SApplyStats
+import com.example.rpgstats.common.curve.Curves
+import com.example.rpgstats.common.config.json.CurveDef
+import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.util.Mth
+
+class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
+
+    private data class Row(
+        val def: ClientStatDef,
+        var y: Int = 0,
+        var plus: Button? = null,
+        var minus: Button? = null
+    )
+
+    private var rows: List<Row> = emptyList()
+    private var originalAlloc: Map<String, Int> = emptyMap()
+    private var workingAlloc: MutableMap<String, Int> = mutableMapOf()
+    private var originalUnspent: Int = 0
+    private var workingUnspent: Int = 0
+    private var lifePeak: Int = 0
+    private var resetButton: Button? = null
+
+    private var leftScrollOffset = 0.0
+    private var rightScrollOffset = 0.0
+    private var leftContentHeight = 0
+    private var rightContentHeight = 0
+
+    override fun init() {
+        super.init()
+
+        val defs = ClientCache.defs
+        val snap = ClientCache.stats
+
+        originalAlloc = snap.allocations
+        workingAlloc = snap.allocations.toMutableMap()
+        originalUnspent = snap.unspent
+        workingUnspent = snap.unspent
+        lifePeak = snap.lifePeak
+
+        val centerX = this.width / 2
+        val centerY = this.height / 2
+
+        // Left column: Attribute editing
+        val leftX = centerX - 250
+        val leftY = centerY - 80
+        val lineH = 18
+        val headerOffset = 30
+
+        // Right column: Stats display (wider for current → new format)
+        val rightX = centerX + 10
+        val rightY = centerY - 80
+
+        rows = defs.map { d -> Row(d) }
+
+        rows.forEachIndexed { idx, row ->
+            val y = leftY + headerOffset + idx * lineH
+            row.y = y
+
+            val minusBtn = Button.builder(Component.literal("-")) {
+                val cur = workingAlloc[row.def.id] ?: 0
+                val original = originalAlloc[row.def.id] ?: 0
+                if (cur > original) {
+                    workingAlloc[row.def.id] = cur - 1
+                    workingUnspent += 1
+                    refreshButtons()
+                }
+            }.pos(leftX + 140, y).size(18, 14).build()
+
+            val plusBtn = Button.builder(Component.literal("+")) {
+                val cur = workingAlloc[row.def.id] ?: 0
+                val cap = if (row.def.maxPoints >= 0) row.def.maxPoints else Int.MAX_VALUE
+                if (workingUnspent > 0 && cur < cap) {
+                    workingAlloc[row.def.id] = cur + 1
+                    workingUnspent -= 1
+                    refreshButtons()
+                }
+            }.pos(leftX + 160, y).size(18, 14).build()
+
+            row.minus = minusBtn
+            row.plus = plusBtn
+            addRenderableWidget(minusBtn)
+            addRenderableWidget(plusBtn)
+        }
+
+        val btnY = leftY + headerOffset + rows.size * lineH + 10
+        addRenderableWidget(
+            Button.builder(Component.translatable("screen.rpgstats.apply")) {
+                Network.sendToServer(C2SApplyStats(workingAlloc.toMap()))
+                this.onClose()
+            }.pos(leftX, btnY).size(80, 18).build()
+        )
+
+        resetButton = Button.builder(Component.translatable("screen.rpgstats.reset")) {
+            workingAlloc = originalAlloc.toMutableMap()
+            workingUnspent = originalUnspent
+            refreshButtons()
+        }.pos(leftX + 90, btnY).size(80, 18).build()
+        addRenderableWidget(resetButton!!)
+
+        refreshButtons()
+    }
+
+    private fun refreshButtons() {
+        var hasDiff = false
+
+        rows.forEach { row ->
+            val cur = workingAlloc[row.def.id] ?: 0
+            val original = originalAlloc[row.def.id] ?: 0
+            val cap = if (row.def.maxPoints >= 0) row.def.maxPoints else Int.MAX_VALUE
+
+            row.plus?.active = workingUnspent > 0 && cur < cap
+            row.minus?.active = cur > original
+
+            if (cur != original) hasDiff = true
+        }
+
+        resetButton?.active = hasDiff
+    }
+
+    override fun render(guiGraphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+        this.renderBackground(guiGraphics)
+        super.render(guiGraphics, mouseX, mouseY, partialTick)
+
+        val centerX = this.width / 2
+        val centerY = this.height / 2
+        val leftX = centerX - 250
+        val leftY = centerY - 80
+        val rightX = centerX + 10
+        val rightY = centerY - 80
+        val headerOffset = 30
+        val lineH = 18
+
+        // Calculate viewport height (from header to bottom, leaving room for buttons)
+        val viewportHeight = this.height - leftY - headerOffset - 50
+
+        // Title at top center
+        val titleWidth = this.font.width(this.title)
+        guiGraphics.drawString(this.font, this.title, centerX - titleWidth / 2, leftY - 18, 0xFFFFFF)
+
+        // Left column header
+        guiGraphics.drawString(
+            this.font,
+            Component.translatable("screen.rpgstats.left_header"),
+            leftX,
+            leftY + headerOffset - 20,
+            0xFFFF55
+        )
+
+        guiGraphics.drawString(
+            this.font,
+            Component.translatable("screen.rpgstats.unspent", workingUnspent.toString()),
+            leftX,
+            leftY + headerOffset - 10,
+            0xFFFFFF
+        )
+
+        // Calculate left content height
+        leftContentHeight = rows.size * lineH
+
+        // Enable scissor for left column
+        guiGraphics.enableScissor(leftX, leftY + headerOffset, leftX + 240, leftY + headerOffset + viewportHeight)
+
+        // Left column: Attribute editing with scroll offset
+        rows.forEach { row ->
+            val pts = workingAlloc[row.def.id] ?: 0
+            val scrolledY = row.y + 3 - leftScrollOffset.toInt()
+
+            // Draw icon
+            if (row.def.icon.isNotEmpty()) {
+                guiGraphics.drawString(
+                    this.font,
+                    row.def.icon,
+                    leftX,
+                    scrolledY,
+                    row.def.color or 0xFF000000.toInt(),
+                    false
+                )
+            }
+
+            // Draw name in color
+            val nameComponent = Component.translatable(row.def.nameKey).withStyle { it.withColor(row.def.color or 0xFF000000.toInt()) }
+            guiGraphics.drawString(
+                this.font,
+                nameComponent,
+                leftX + 12,
+                scrolledY,
+                0xFFFFFF,
+                false
+            )
+
+            // Draw points
+            guiGraphics.drawString(
+                this.font,
+                Component.literal(pts.toString()),
+                leftX + 110,
+                scrolledY,
+                0xE0E0E0
+            )
+        }
+
+        guiGraphics.disableScissor()
+
+        // Right column header
+        guiGraphics.drawString(
+            this.font,
+            Component.translatable("screen.rpgstats.right_header"),
+            rightX,
+            rightY + headerOffset - 20,
+            0x55FF55
+        )
+
+        guiGraphics.drawString(
+            this.font,
+            Component.translatable("screen.rpgstats.life_peak", lifePeak.toString()),
+            rightX,
+            rightY + headerOffset - 10,
+            0xFFFFFF
+        )
+
+        // Enable scissor for right column
+        guiGraphics.enableScissor(rightX, rightY + headerOffset, rightX + 240, rightY + headerOffset + viewportHeight)
+
+        // Right column: Stats with diff
+        renderStatsColumn(guiGraphics, rightX, rightY + headerOffset)
+
+        guiGraphics.disableScissor()
+
+        // Render tooltips for left column attribute rows
+        rows.forEachIndexed { idx, row ->
+            val rowY = leftY + headerOffset + idx * lineH - leftScrollOffset.toInt()
+            val rowHeight = 14
+            val textWidth = this.font.width(Component.translatable(row.def.nameKey)) + 130
+
+            if (mouseX >= leftX && mouseX <= leftX + textWidth &&
+                mouseY >= rowY && mouseY <= rowY + rowHeight &&
+                mouseY >= leftY + headerOffset && mouseY <= leftY + headerOffset + viewportHeight) {
+
+                val tooltip = buildTooltip(row.def)
+                guiGraphics.renderComponentTooltip(this.font, tooltip, mouseX, rowY)
+            }
+        }
+    }
+
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollDelta: Double): Boolean {
+        val centerX = this.width / 2
+        val centerY = this.height / 2
+        val leftX = centerX - 250
+        val leftY = centerY - 80
+        val rightX = centerX + 10
+        val rightY = centerY - 80
+        val headerOffset = 30
+        val viewportHeight = this.height - leftY - headerOffset - 50
+
+        // Check if mouse is over left column
+        if (mouseX >= leftX && mouseX <= leftX + 240 && mouseY >= leftY + headerOffset && mouseY <= leftY + headerOffset + viewportHeight) {
+            val maxScroll = maxOf(0, leftContentHeight - viewportHeight)
+            leftScrollOffset = Mth.clamp(leftScrollOffset - scrollDelta * 10, 0.0, maxScroll.toDouble())
+            return true
+        }
+
+        // Check if mouse is over right column
+        if (mouseX >= rightX && mouseX <= rightX + 240 && mouseY >= rightY + headerOffset && mouseY <= rightY + headerOffset + viewportHeight) {
+            val maxScroll = maxOf(0, rightContentHeight - viewportHeight)
+            rightScrollOffset = Mth.clamp(rightScrollOffset - scrollDelta * 10, 0.0, maxScroll.toDouble())
+            return true
+        }
+
+        return super.mouseScrolled(mouseX, mouseY, scrollDelta)
+    }
+
+    private fun renderStatsColumn(guiGraphics: GuiGraphics, x: Int, startY: Int) {
+        val lineH = 18
+        var y = startY - rightScrollOffset.toInt()
+        var lineCount = 0
+
+        // Collect all unique attributes and find their primary provider
+        data class AttributeInfo(
+            val attributeId: String,
+            val operation: Int,
+            val friendlyName: String,
+            val primaryProviderColor: Int,
+            val primaryProviderPerPoint: Double
+        )
+
+        val allAttributes = mutableMapOf<String, AttributeInfo>()
+
+        rows.forEach { row ->
+            row.def.effects.forEach { effect ->
+                val existing = allAttributes[effect.attributeId]
+
+                if (existing == null) {
+                    val attrId = ResourceLocation.tryParse(effect.attributeId)
+                    val friendlyName = if (attrId != null) {
+                        val key = "attr.${attrId.namespace}.${attrId.path}"
+                        val translated = Component.translatable(key).string
+                        if (translated == key) effect.attributeId else translated
+                    } else {
+                        effect.attributeId
+                    }
+
+                    // Use primary color if this is a primary effect, lightened if secondary
+                    val effectColor = if (effect.isPrimary) row.def.color else lightenColor(row.def.color)
+
+                    allAttributes[effect.attributeId] = AttributeInfo(
+                        effect.attributeId,
+                        effect.operation,
+                        friendlyName,
+                        effectColor,
+                        effect.curve.perPoint
+                    )
+                } else if (effect.isPrimary && existing.primaryProviderPerPoint < effect.curve.perPoint) {
+                    // Update to use this primary provider's color if it contributes more
+                    allAttributes[effect.attributeId] = existing.copy(
+                        primaryProviderColor = row.def.color,
+                        primaryProviderPerPoint = effect.curve.perPoint
+                    )
+                }
+            }
+        }
+
+        // Calculate current and new values for each attribute
+        allAttributes.values.sortedBy { it.friendlyName }.forEach { attrInfo ->
+            var originalTotal = 0.0
+            var workingTotal = 0.0
+
+            rows.forEach { row ->
+                val originalPoints = originalAlloc[row.def.id] ?: 0
+                val workingPoints = workingAlloc[row.def.id] ?: 0
+
+                row.def.effects.forEach { effect ->
+                    if (effect.attributeId == attrInfo.attributeId) {
+                        val curveDef = CurveDef(
+                            type = effect.curve.type,
+                            cap = effect.curve.cap,
+                            k = effect.curve.k,
+                            perPoint = effect.curve.perPoint,
+                            min = effect.curve.min,
+                            max = effect.curve.max
+                        )
+                        originalTotal += Curves.eval(originalPoints, curveDef)
+                        workingTotal += Curves.eval(workingPoints, curveDef)
+                    }
+                }
+            }
+
+            // Only show if there's any value (current or future)
+            if (originalTotal != 0.0 || workingTotal != 0.0) {
+                val isMultiplier = attrInfo.operation == 1
+
+                val originalStr = if (isMultiplier) {
+                    String.format("%.2fx", 1.0 + originalTotal)
+                } else {
+                    String.format("%.2f", originalTotal)
+                }
+
+                val workingStr = if (isMultiplier) {
+                    String.format("%.2fx", 1.0 + workingTotal)
+                } else {
+                    String.format("%.2f", workingTotal)
+                }
+
+                val valueChanged = originalTotal != workingTotal
+                val color = attrInfo.primaryProviderColor or 0xFF000000.toInt()
+
+                // Draw attribute name in primary provider's color
+                guiGraphics.drawString(this.font, attrInfo.friendlyName, x, y, color, false)
+
+                // Draw "Current → New" or just "Current" if unchanged
+                if (valueChanged) {
+                    guiGraphics.drawString(this.font, originalStr, x + 130, y, color, false)
+                    guiGraphics.drawString(this.font, "→", x + 180, y, color, false)
+                    guiGraphics.drawString(this.font, workingStr, x + 195, y, color, false)
+                } else {
+                    guiGraphics.drawString(this.font, originalStr, x + 130, y, color, false)
+                }
+
+                y += lineH
+                lineCount++
+            }
+        }
+
+        // Update right content height for scrolling
+        rightContentHeight = lineCount * lineH
+    }
+
+    private fun lightenColor(color: Int, factor: Double = 1.5): Int {
+        val a = ((color shr 24) and 0xFF)
+        val r = ((color shr 16) and 0xFF)
+        val g = ((color shr 8) and 0xFF)
+        val b = (color and 0xFF)
+
+        val newR = minOf(255, (r * factor).toInt())
+        val newG = minOf(255, (g * factor).toInt())
+        val newB = minOf(255, (b * factor).toInt())
+
+        return (a shl 24) or (newR shl 16) or (newG shl 8) or newB
+    }
+
+    private fun getAttributeColor(attributeId: String): Int {
+        // Find the effect that provides this attribute and use its stat's color
+        // If primary effect, use full color; if secondary, use lightened color
+        var resultColor = 0xE0E0E0
+        var foundPrimary = false
+
+        rows.forEach { row ->
+            row.def.effects.forEach { effect ->
+                if (effect.attributeId == attributeId) {
+                    if (effect.isPrimary && !foundPrimary) {
+                        resultColor = row.def.color
+                        foundPrimary = true
+                    } else if (!foundPrimary) {
+                        resultColor = lightenColor(row.def.color)
+                    }
+                }
+            }
+        }
+
+        return resultColor
+    }
+
+    private fun buildTooltip(def: ClientStatDef): List<Component> {
+        val lines = mutableListOf<Component>()
+
+        if (def.effects.isEmpty()) {
+            lines.add(Component.translatable("tooltip.rpgstats.no_effects"))
+            return lines
+        }
+
+        lines.add(Component.translatable("tooltip.rpgstats.effects_header"))
+
+        val currentPoints = workingAlloc[def.id] ?: 0
+
+        def.effects.forEach { effect ->
+            val attrId = ResourceLocation.tryParse(effect.attributeId)
+            val attrName = if (attrId != null) {
+                val key = "attr.${attrId.namespace}.${attrId.path}"
+                val translated = Component.translatable(key)
+                // If translation fails, it returns the key - use literal instead
+                if (translated.string == key) {
+                    Component.literal(effect.attributeId)
+                } else {
+                    translated
+                }
+            } else {
+                Component.literal(effect.attributeId)
+            }
+
+            val curveDef = CurveDef(
+                type = effect.curve.type,
+                cap = effect.curve.cap,
+                k = effect.curve.k,
+                perPoint = effect.curve.perPoint,
+                min = effect.curve.min,
+                max = effect.curve.max
+            )
+
+            // Calculate marginal value (next point's contribution)
+            val currentValue = Curves.eval(currentPoints, curveDef)
+            val nextValue = Curves.eval(currentPoints + 1, curveDef)
+            val marginalValue = nextValue - currentValue
+
+            val sign = if (marginalValue >= 0) "+" else ""
+            val valueStr = if (effect.operation == 1) {
+                // For multipliers, show the effective multiplier change
+                val currentMultiplier = 1.0 + currentValue
+                val nextMultiplier = 1.0 + nextValue
+                val multiplierChange = nextMultiplier - currentMultiplier
+                "${sign}${String.format("%.3f", multiplierChange)}x"
+            } else {
+                "${sign}${String.format("%.2f", marginalValue)}"
+            }
+
+            // Use primary color if this is a primary effect, lightened if secondary
+            val effectColor = if (effect.isPrimary) def.color else lightenColor(def.color)
+            val coloredName = Component.literal(attrName.string).withStyle { it.withColor(effectColor) }
+
+            val line = Component.literal("  $valueStr ")
+                .append(coloredName)
+                .append(Component.literal(" "))
+                .append(Component.translatable("tooltip.rpgstats.per_point"))
+
+            lines.add(line)
+        }
+
+        return lines
+    }
+
+    override fun isPauseScreen(): Boolean = false
+}

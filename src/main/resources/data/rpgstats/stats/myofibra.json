@@ -1,0 +1,18 @@
+{
+  "name_key": "stat.rpgstats.myofibra",
+  "icon": "\u27C1",
+  "color": "#8B4513",
+  "max_points": 50,
+  "effects": [
+    {
+      "type": "attribute",
+      "attribute": "minecraft:generic.attack_damage",
+      "operation": "add",
+      "curve": {
+        "type": "linear",
+        "per_point": 0.5
+      },
+      "is_primary": true
+    }
+  ]
+}

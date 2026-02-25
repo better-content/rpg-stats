@@ -1,6 +1,6 @@
 {
   "pack": {
-    "description": "tcon_part_affixes resources",
-    "pack_format": 15
+    "pack_format": 15,
+    "description": "${mod_name} resources"
   }
 }
