@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.util.Mth
+import kotlin.math.abs
 
 class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
 
@@ -28,6 +29,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
     private var originalUnspent: Int = 0
     private var workingUnspent: Int = 0
     private var lifePeak: Int = 0
+    private var applyButton: Button? = null
     private var resetButton: Button? = null
 
     private var leftScrollOffset = 0.0
@@ -53,7 +55,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
         // Left column: Attribute editing
         val leftX = centerX - 250
         val leftY = centerY - 80
-        val lineH = 18
+        val lineH = 28
         val headerOffset = 30
 
         // Right column: Stats display (wider for current → new format)
@@ -68,13 +70,16 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
 
             val minusBtn = Button.builder(Component.literal("-")) {
                 val cur = workingAlloc[row.def.id] ?: 0
-                val original = originalAlloc[row.def.id] ?: 0
-                if (cur > original) {
-                    workingAlloc[row.def.id] = cur - 1
+                if (cur > 0) {
+                    if (cur == 1) {
+                        workingAlloc.remove(row.def.id)
+                    } else {
+                        workingAlloc[row.def.id] = cur - 1
+                    }
                     workingUnspent += 1
                     refreshButtons()
                 }
-            }.pos(leftX + 140, y).size(18, 14).build()
+            }.pos(leftX + 188, y + 6).size(18, 14).build()
 
             val plusBtn = Button.builder(Component.literal("+")) {
                 val cur = workingAlloc[row.def.id] ?: 0
@@ -84,7 +89,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
                     workingUnspent -= 1
                     refreshButtons()
                 }
-            }.pos(leftX + 160, y).size(18, 14).build()
+            }.pos(leftX + 208, y + 6).size(18, 14).build()
 
             row.minus = minusBtn
             row.plus = plusBtn
@@ -92,17 +97,16 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
             addRenderableWidget(plusBtn)
         }
 
-        val btnY = leftY + headerOffset + rows.size * lineH + 10
-        addRenderableWidget(
-            Button.builder(Component.translatable("screen.rpgstats.apply")) {
-                Network.sendToServer(C2SApplyStats(workingAlloc.toMap()))
-                this.onClose()
-            }.pos(leftX, btnY).size(80, 18).build()
-        )
+        val btnY = leftY + headerOffset + rows.size * lineH + 12
+        applyButton = Button.builder(Component.translatable("screen.rpgstats.apply")) {
+            Network.sendToServer(C2SApplyStats(workingAlloc.toMap()))
+            this.onClose()
+        }.pos(leftX, btnY).size(80, 18).build()
+        addRenderableWidget(applyButton!!)
 
         resetButton = Button.builder(Component.translatable("screen.rpgstats.reset")) {
-            workingAlloc = originalAlloc.toMutableMap()
-            workingUnspent = originalUnspent
+            workingUnspent += workingAlloc.values.sum()
+            workingAlloc.clear()
             refreshButtons()
         }.pos(leftX + 90, btnY).size(80, 18).build()
         addRenderableWidget(resetButton!!)
@@ -112,6 +116,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
 
     private fun refreshButtons() {
         var hasDiff = false
+        var hasAllocatedPoints = false
 
         rows.forEach { row ->
             val cur = workingAlloc[row.def.id] ?: 0
@@ -119,12 +124,14 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
             val cap = if (row.def.maxPoints >= 0) row.def.maxPoints else Int.MAX_VALUE
 
             row.plus?.active = workingUnspent > 0 && cur < cap
-            row.minus?.active = cur > original
+            row.minus?.active = cur > 0
 
+            if (cur > 0) hasAllocatedPoints = true
             if (cur != original) hasDiff = true
         }
 
-        resetButton?.active = hasDiff
+        applyButton?.active = hasDiff
+        resetButton?.active = hasAllocatedPoints
     }
 
     override fun render(guiGraphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
@@ -138,7 +145,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
         val rightX = centerX + 10
         val rightY = centerY - 80
         val headerOffset = 30
-        val lineH = 18
+        val lineH = 28
 
         // Calculate viewport height (from header to bottom, leaving room for buttons)
         val viewportHeight = this.height - leftY - headerOffset - 50
@@ -173,7 +180,8 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
         // Left column: Attribute editing with scroll offset
         rows.forEach { row ->
             val pts = workingAlloc[row.def.id] ?: 0
-            val scrolledY = row.y + 3 - leftScrollOffset.toInt()
+            val scrolledY = row.y - leftScrollOffset.toInt()
+            val summary = buildRowSummary(row.def, pts)
 
             // Draw icon
             if (row.def.icon.isNotEmpty()) {
@@ -181,7 +189,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
                     this.font,
                     row.def.icon,
                     leftX,
-                    scrolledY,
+                    scrolledY + 1,
                     row.def.color or 0xFF000000.toInt(),
                     false
                 )
@@ -198,13 +206,23 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
                 false
             )
 
+            guiGraphics.drawString(
+                this.font,
+                summary,
+                leftX + 12,
+                scrolledY + 11,
+                0xCFCFCF,
+                false
+            )
+
             // Draw points
             guiGraphics.drawString(
                 this.font,
-                Component.literal(pts.toString()),
-                leftX + 110,
+                Component.literal(formatPointCounter(row.def, pts)),
+                leftX + 128,
                 scrolledY,
-                0xE0E0E0
+                0xE0E0E0,
+                false
             )
         }
 
@@ -238,8 +256,8 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
         // Render tooltips for left column attribute rows
         rows.forEachIndexed { idx, row ->
             val rowY = leftY + headerOffset + idx * lineH - leftScrollOffset.toInt()
-            val rowHeight = 14
-            val textWidth = this.font.width(Component.translatable(row.def.nameKey)) + 130
+            val rowHeight = lineH - 4
+            val textWidth = 182
 
             if (mouseX >= leftX && mouseX <= leftX + textWidth &&
                 mouseY >= rowY && mouseY <= rowY + rowHeight &&
@@ -357,17 +375,8 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
             if (originalTotal != 0.0 || workingTotal != 0.0) {
                 val isMultiplier = attrInfo.operation == 1
 
-                val originalStr = if (isMultiplier) {
-                    String.format("%.2fx", 1.0 + originalTotal)
-                } else {
-                    String.format("%.2f", originalTotal)
-                }
-
-                val workingStr = if (isMultiplier) {
-                    String.format("%.2fx", 1.0 + workingTotal)
-                } else {
-                    String.format("%.2f", workingTotal)
-                }
+                val originalStr = formatEffectValue(originalTotal, isMultiplier)
+                val workingStr = formatEffectValue(workingTotal, isMultiplier)
 
                 val valueChanged = originalTotal != workingTotal
                 val color = attrInfo.primaryProviderColor or 0xFF000000.toInt()
@@ -406,26 +415,80 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
         return (a shl 24) or (newR shl 16) or (newG shl 8) or newB
     }
 
-    private fun getAttributeColor(attributeId: String): Int {
-        // Find the effect that provides this attribute and use its stat's color
-        // If primary effect, use full color; if secondary, use lightened color
-        var resultColor = 0xE0E0E0
-        var foundPrimary = false
+    private fun formatPointCounter(def: ClientStatDef, points: Int): String {
+        return if (def.maxPoints >= 0) {
+            "$points/${def.maxPoints}"
+        } else {
+            points.toString()
+        }
+    }
 
-        rows.forEach { row ->
-            row.def.effects.forEach { effect ->
-                if (effect.attributeId == attributeId) {
-                    if (effect.isPrimary && !foundPrimary) {
-                        resultColor = row.def.color
-                        foundPrimary = true
-                    } else if (!foundPrimary) {
-                        resultColor = lightenColor(row.def.color)
-                    }
-                }
-            }
+    private fun buildRowSummary(def: ClientStatDef, currentPoints: Int): Component {
+        val primary = def.effects.firstOrNull { it.isPrimary } ?: def.effects.firstOrNull()
+            ?: return Component.translatable("tooltip.rpgstats.no_effects")
+
+        val attrName = resolveAttributeName(primary.attributeId)
+        val summary = formatMarginalGain(primary, currentPoints)
+        val secondaryCount = (def.effects.size - 1).coerceAtLeast(0)
+        val suffix = if (secondaryCount > 0) {
+            Component.translatable("screen.rpgstats.more_effects", secondaryCount.toString())
+        } else {
+            Component.empty()
         }
 
-        return resultColor
+        return Component.translatable("screen.rpgstats.main_effect", summary, attrName).append(suffix)
+    }
+
+    private fun resolveAttributeName(attributeId: String): Component {
+        val attrId = ResourceLocation.tryParse(attributeId)
+        if (attrId == null) {
+            return Component.literal(attributeId)
+        }
+
+        val key = "attr.${attrId.namespace}.${attrId.path}"
+        val translated = Component.translatable(key)
+        return if (translated.string == key) Component.literal(attributeId) else translated
+    }
+
+    private fun formatEffectValue(value: Double, isMultiplier: Boolean): String {
+        return if (isMultiplier) {
+            formatSignedPercent(value)
+        } else {
+            formatSignedNumber(value)
+        }
+    }
+
+    private fun formatMarginalGain(effect: com.example.rpgstats.client.cache.ClientEffectDef, currentPoints: Int): String {
+        val curveDef = CurveDef(
+            type = effect.curve.type,
+            cap = effect.curve.cap,
+            k = effect.curve.k,
+            perPoint = effect.curve.perPoint,
+            min = effect.curve.min,
+            max = effect.curve.max
+        )
+        val currentValue = Curves.eval(currentPoints, curveDef)
+        val nextValue = Curves.eval(currentPoints + 1, curveDef)
+        val delta = nextValue - currentValue
+        return formatEffectValue(delta, effect.operation != 0)
+    }
+
+    private fun formatSignedPercent(value: Double): String {
+        val percent = value * 100.0
+        return "${if (percent >= 0.0) "+" else ""}${trimNumber(percent)}%"
+    }
+
+    private fun formatSignedNumber(value: Double): String {
+        return "${if (value >= 0.0) "+" else ""}${trimNumber(value)}"
+    }
+
+    private fun trimNumber(value: Double): String {
+        val absValue = abs(value)
+        return when {
+            absValue >= 100.0 -> String.format("%.0f", value)
+            absValue >= 10.0 -> String.format("%.1f", value)
+            else -> String.format("%.2f", value)
+        }
     }
 
     private fun buildTooltip(def: ClientStatDef): List<Component> {
@@ -436,24 +499,12 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
             return lines
         }
 
+        val currentPoints = workingAlloc[def.id] ?: 0
+        lines.add(Component.translatable("tooltip.rpgstats.points_header", formatPointCounter(def, currentPoints)))
         lines.add(Component.translatable("tooltip.rpgstats.effects_header"))
 
-        val currentPoints = workingAlloc[def.id] ?: 0
-
         def.effects.forEach { effect ->
-            val attrId = ResourceLocation.tryParse(effect.attributeId)
-            val attrName = if (attrId != null) {
-                val key = "attr.${attrId.namespace}.${attrId.path}"
-                val translated = Component.translatable(key)
-                // If translation fails, it returns the key - use literal instead
-                if (translated.string == key) {
-                    Component.literal(effect.attributeId)
-                } else {
-                    translated
-                }
-            } else {
-                Component.literal(effect.attributeId)
-            }
+            val attrName = resolveAttributeName(effect.attributeId)
 
             val curveDef = CurveDef(
                 type = effect.curve.type,
@@ -469,25 +520,18 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
             val nextValue = Curves.eval(currentPoints + 1, curveDef)
             val marginalValue = nextValue - currentValue
 
-            val sign = if (marginalValue >= 0) "+" else ""
-            val valueStr = if (effect.operation == 1) {
-                // For multipliers, show the effective multiplier change
-                val currentMultiplier = 1.0 + currentValue
-                val nextMultiplier = 1.0 + nextValue
-                val multiplierChange = nextMultiplier - currentMultiplier
-                "${sign}${String.format("%.3f", multiplierChange)}x"
-            } else {
-                "${sign}${String.format("%.2f", marginalValue)}"
-            }
-
             // Use primary color if this is a primary effect, lightened if secondary
             val effectColor = if (effect.isPrimary) def.color else lightenColor(def.color)
             val coloredName = Component.literal(attrName.string).withStyle { it.withColor(effectColor) }
+            val roleKey = if (effect.isPrimary) "tooltip.rpgstats.main_effect" else "tooltip.rpgstats.bonus_effect"
+            val nowText = formatEffectValue(currentValue, effect.operation != 0)
+            val nextText = formatEffectValue(marginalValue, effect.operation != 0)
 
-            val line = Component.literal("  $valueStr ")
+            val line = Component.translatable(roleKey)
+                .append(Component.literal(": "))
                 .append(coloredName)
                 .append(Component.literal(" "))
-                .append(Component.translatable("tooltip.rpgstats.per_point"))
+                .append(Component.translatable("tooltip.rpgstats.now_next", nowText, nextText))
 
             lines.add(line)
         }

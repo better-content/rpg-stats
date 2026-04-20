@@ -3,7 +3,6 @@ package com.example.rpgstats.common.network
 import com.example.rpgstats.RpgStatsMod
 import com.example.rpgstats.common.data.StatsCap
 import com.example.rpgstats.common.network.packets.C2SApplyStats
-import com.example.rpgstats.common.network.packets.C2SResetStats
 import com.example.rpgstats.common.network.packets.S2CStatDefsSync
 import com.example.rpgstats.common.network.packets.S2CStatsSync
 import net.minecraft.resources.ResourceLocation
@@ -27,7 +26,6 @@ object Network {
         CHANNEL.registerMessage(id++, S2CStatDefsSync::class.java, S2CStatDefsSync::encode, S2CStatDefsSync::decode, S2CStatDefsSync::handle)
         CHANNEL.registerMessage(id++, S2CStatsSync::class.java, S2CStatsSync::encode, S2CStatsSync::decode, S2CStatsSync::handle)
         CHANNEL.registerMessage(id++, C2SApplyStats::class.java, C2SApplyStats::encode, C2SApplyStats::decode, C2SApplyStats::handle)
-        CHANNEL.registerMessage(id++, C2SResetStats::class.java, C2SResetStats::encode, C2SResetStats::decode, C2SResetStats::handle)
     }
 
     fun sendToServer(msg: Any) {

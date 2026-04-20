@@ -1,6 +1,0 @@
-[14:32:35] [main/DEBUG] [ne.mi.fm.co.ConfigFileTypeHandler/CONFIG]: Loaded TOML config file /home/gerald/IdeaProjects/tcon_part_affixes/run/config/tconstruct-common.toml
-[14:32:37] [main/INFO] [or.ge.tc.TconPartAffixes/]: AffixRegistry.apply called with 0 objects
-[14:32:37] [main/INFO] [or.ge.tc.TconPartAffixes/]: Loaded 0 affixes
-[14:32:38] [Server thread/DEBUG] [ne.mi.fm.co.ConfigFileTypeHandler/CONFIG]: Loaded TOML config file ./world/serverconfig/tconaffixes-server.toml
-> Task :runGameTestServer FAILED
-BUILD FAILED in 24s

@@ -4,6 +4,7 @@ import com.example.rpgstats.RpgStatsMod
 import com.example.rpgstats.common.attribute.StatAttributeProjector
 import com.example.rpgstats.common.data.PlayerStatsProvider
 import com.example.rpgstats.common.data.StatsCap
+import com.example.rpgstats.common.item.StillBeatingHeartData
 import com.example.rpgstats.common.network.Network
 import com.example.rpgstats.common.points.PointAwarder
 import com.example.rpgstats.common.reload.RegistryState
@@ -15,7 +16,9 @@ import net.minecraft.world.entity.player.Player
 import net.minecraftforge.event.AddReloadListenerEvent
 import net.minecraftforge.event.AttachCapabilitiesEvent
 import net.minecraftforge.event.TickEvent
+import net.minecraftforge.event.entity.living.LivingDeathEvent
 import net.minecraftforge.event.entity.player.PlayerEvent
+import net.minecraftforge.eventbus.api.EventPriority
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 
@@ -86,5 +89,14 @@ object CommonForgeEvents {
         if (p is ServerPlayer) {
             PointAwarder.tick(p)
         }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    fun onLivingDeath(event: LivingDeathEvent) {
+        val player = event.entity as? ServerPlayer ?: return
+        if (player.level().isClientSide || player.isSpectator) return
+
+        val heart = StillBeatingHeartData.create(player, event.source)
+        player.spawnAtLocation(heart)?.setExtendedLifetime()
     }
 }
