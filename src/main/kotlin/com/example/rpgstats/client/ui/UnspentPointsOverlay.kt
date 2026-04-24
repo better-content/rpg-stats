@@ -2,6 +2,7 @@ package com.example.rpgstats.client.ui
 
 import com.example.rpgstats.RpgStatsMod
 import com.example.rpgstats.client.cache.ClientCache
+import com.example.rpgstats.client.input.KeybindRegister
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import net.minecraftforge.api.distmarker.Dist
@@ -24,7 +25,7 @@ object UnspentPointsOverlay {
         val font = mc.font
 
         val text1 = Component.translatable("overlay.rpgstats.unspent_points", unspent.toString())
-        val text2 = Component.translatable("overlay.rpgstats.press_key", "O")
+        val text2 = Component.translatable("overlay.rpgstats.press_key", KeybindRegister.mapping().translatedKeyMessage)
         val boxWidth = maxOf(font.width(text1), font.width(text2))
 
         val padding = 10

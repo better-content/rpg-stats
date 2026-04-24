@@ -33,10 +33,11 @@ class StillBeatingHeartItem(properties: Properties) : Item(properties) {
         val statEntries = rpgStats.getList("entries", Tag.TAG_COMPOUND.toInt())
         val attributes = data.getList("attributes", Tag.TAG_COMPOUND.toInt())
         val equipment = data.getCompound("equipment")
+        val deathMessage = shorten(death.getString("message"), 64)
 
         tooltip += Component.translatable("item.rpgstats.still_beating_heart.tooltip.player", player.getString("name"))
             .withStyle(ChatFormatting.GRAY)
-        tooltip += Component.translatable("item.rpgstats.still_beating_heart.tooltip.killed_by", death.getString("message"))
+        tooltip += Component.translatable("item.rpgstats.still_beating_heart.tooltip.killed_by", deathMessage)
             .withStyle(ChatFormatting.RED)
         tooltip += Component.translatable(
             "item.rpgstats.still_beating_heart.tooltip.location",
@@ -46,11 +47,21 @@ class StillBeatingHeartItem(properties: Properties) : Item(properties) {
             location.getInt("block_z")
         ).withStyle(ChatFormatting.DARK_AQUA)
         tooltip += Component.translatable(
-            "item.rpgstats.still_beating_heart.tooltip.progress",
+            "item.rpgstats.still_beating_heart.tooltip.level",
             player.getInt("experience_level"),
-            player.getInt("total_experience"),
             rpgStats.getInt("life_peak_level")
         ).withStyle(ChatFormatting.BLUE)
+        tooltip += Component.translatable(
+            "item.rpgstats.still_beating_heart.tooltip.total_xp",
+            player.getInt("total_experience")
+        ).withStyle(ChatFormatting.BLUE)
+
+        if (!flag.isAdvanced) {
+            tooltip += Component.translatable("item.rpgstats.still_beating_heart.tooltip.more")
+                .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC)
+            return
+        }
+
         tooltip += Component.translatable(
             "item.rpgstats.still_beating_heart.tooltip.vitals",
             number(vitals.getFloat("health").toDouble()),
@@ -76,22 +87,25 @@ class StillBeatingHeartItem(properties: Properties) : Item(properties) {
             equipment.allKeys.size
         ).withStyle(ChatFormatting.DARK_GRAY)
 
-        if (flag.isAdvanced) {
-            tooltip += Component.translatable("item.rpgstats.still_beating_heart.tooltip.attributes_header")
-                .withStyle(ChatFormatting.DARK_GREEN)
-            for (i in 0 until attributes.size) {
-                val attribute = attributes.getCompound(i)
-                tooltip += Component.translatable(
-                    "item.rpgstats.still_beating_heart.tooltip.attribute_line",
-                    Component.translatable(attribute.getString("name_key")),
-                    number(attribute.getDouble("value"))
-                ).withStyle(ChatFormatting.GREEN)
-            }
+        tooltip += Component.translatable("item.rpgstats.still_beating_heart.tooltip.attributes_header")
+            .withStyle(ChatFormatting.DARK_GREEN)
+        for (i in 0 until attributes.size) {
+            val attribute = attributes.getCompound(i)
+            tooltip += Component.translatable(
+                "item.rpgstats.still_beating_heart.tooltip.attribute_line",
+                Component.translatable(attribute.getString("name_key")),
+                number(attribute.getDouble("value"))
+            ).withStyle(ChatFormatting.GREEN)
         }
     }
 
     private fun shortDimension(dimension: String): String {
         return dimension.removePrefix("minecraft:")
+    }
+
+    private fun shorten(input: String, maxChars: Int): String {
+        if (maxChars <= 3 || input.length <= maxChars) return input
+        return input.take(maxChars - 3).trimEnd() + "..."
     }
 
     private fun number(value: Double): String = NUMBER_FORMAT.format(value)

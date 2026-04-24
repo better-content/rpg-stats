@@ -93,6 +93,10 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     }
 }
 
+tasks.named('jar', Jar).configure {
+    finalizedBy 'reobfJar'
+}
+
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
