@@ -9,13 +9,16 @@ import net.minecraft.world.item.TooltipFlag
 import net.minecraft.world.level.Level
 import java.text.DecimalFormat
 
-class StillBeatingHeartItem(properties: Properties) : Item(properties) {
+class StillBeatingHeartItem(
+    properties: Properties,
+    private val namedTranslationKey: String
+) : Item(properties) {
 
     override fun getName(stack: ItemStack): Component {
         val data = StillBeatingHeartData.getData(stack) ?: return super.getName(stack)
         val player = data.getCompound("player").getString("name")
         if (player.isBlank()) return super.getName(stack)
-        return Component.translatable("item.rpgstats.still_beating_heart.named", player)
+        return Component.translatable(namedTranslationKey, player)
     }
 
     override fun appendHoverText(

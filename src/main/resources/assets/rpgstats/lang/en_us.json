@@ -12,6 +12,8 @@
   "screen.rpgstats.more_effects": "  +%s more",
   "item.rpgstats.still_beating_heart": "Still Beating Heart",
   "item.rpgstats.still_beating_heart.named": "%s's Still Beating Heart",
+  "item.rpgstats.heart_flesh": "Heart Flesh",
+  "item.rpgstats.heart_flesh.named": "%s's Heart Flesh",
   "item.rpgstats.still_beating_heart.tooltip.player": "Owner: %s",
   "item.rpgstats.still_beating_heart.tooltip.killed_by": "Killed by: %s",
   "item.rpgstats.still_beating_heart.tooltip.location": "Died at: %s (%s, %s, %s)",

@@ -69,10 +69,15 @@ object CommonForgeEvents {
         }
 
         if (newP is ServerPlayer) {
-            deliverPendingHearts(newP)
             StatAttributeProjector.reapply(newP)
             Network.syncTo(newP)
         }
+    }
+
+    @SubscribeEvent
+    fun onRespawn(event: PlayerEvent.PlayerRespawnEvent) {
+        val player = event.entity as? ServerPlayer ?: return
+        deliverPendingHearts(player)
     }
 
     @SubscribeEvent
