@@ -90,8 +90,6 @@ object CommonForgeEvents {
                 stats.lifePeakLevel = p.experienceLevel
             }
 
-            deliverPendingHearts(p)
-
             // Send defs first, then stats snapshot
             Network.sendTo(p, S2CStatDefsSync.fromDefs(RegistryState.snapshot().values.toList()))
             StatAttributeProjector.reapply(p)
@@ -105,7 +103,6 @@ object CommonForgeEvents {
         val p = event.player
         if (p is ServerPlayer) {
             PointAwarder.tick(p)
-            deliverPendingHearts(p)
         }
     }
 

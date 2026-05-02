@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " G ",
+    " I ",
+    " S "
+  ],
+  "key": {
+    "G": { "item": "minecraft:gold_ingot" },
+    "I": { "item": "rpgstats:iron_ritual_dagger" },
+    "S": { "item": "minecraft:stick" }
+  },
+  "result": {
+    "item": "rpgstats:gold_ritual_dagger"
+  }
+}

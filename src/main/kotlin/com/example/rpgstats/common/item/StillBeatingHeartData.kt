@@ -4,6 +4,7 @@ import com.example.rpgstats.common.config.json.AttributeEffect
 import com.example.rpgstats.common.curve.Curves
 import com.example.rpgstats.common.data.StatsCap
 import com.example.rpgstats.common.reload.RegistryState
+import com.example.rpgstats.common.ritual.RitualConstants
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.Tag
@@ -13,6 +14,7 @@ import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.item.ItemStack
 import net.minecraftforge.registries.ForgeRegistries
+import kotlin.math.ceil
 
 object StillBeatingHeartData {
     const val DATA_TAG: String = "StillBeatingHeartData"
@@ -30,6 +32,7 @@ object StillBeatingHeartData {
         root.put("location", locationTag(player))
         root.put("vitals", vitalsTag(player))
         root.put("rpgstats", rpgStatsTag(player))
+        root.put("ritual", ritualTag(player))
         root.put("attributes", attributesTag(player))
         root.put("equipment", equipmentTag(player))
 
@@ -110,12 +113,19 @@ object StillBeatingHeartData {
             tag.putInt("total_points_this_life", stats.totalPointsThisLife())
         }
 
+        val ritualBonusPercent = player.persistentData.getInt(RitualConstants.PENDING_BONUS_PERCENT_TAG)
+
         defs.forEach { def ->
             val points = stats?.allocations?.get(def.id.toString()) ?: 0
+            val ritualBonusPoints = ceil(points * (ritualBonusPercent / 100.0)).toInt()
+            val effectivePoints = points + ritualBonusPoints
             val entry = CompoundTag()
             entry.putString("id", def.id.toString())
             entry.putString("name_key", def.nameKey)
             entry.putInt("points", points)
+            entry.putInt("ritual_bonus_percent", ritualBonusPercent)
+            entry.putInt("ritual_bonus_points", ritualBonusPoints)
+            entry.putInt("effective_points", effectivePoints)
             entry.putInt("max_points", def.maxPoints)
 
             val effects = ListTag()
@@ -124,7 +134,7 @@ object StillBeatingHeartData {
                     val effectTag = CompoundTag()
                     effectTag.putString("attribute", effect.attributeId.toString())
                     effectTag.putString("operation", effect.operation.name)
-                    effectTag.putDouble("value", Curves.eval(points, effect.curve))
+                    effectTag.putDouble("value", Curves.eval(effectivePoints, effect.curve))
                     effectTag.putBoolean("is_primary", effect.isPrimary)
                     effects.add(effectTag)
                 }
@@ -134,6 +144,26 @@ object StillBeatingHeartData {
         }
 
         tag.put("entries", entries)
+        return tag
+    }
+
+    private fun ritualTag(player: ServerPlayer): CompoundTag {
+        val tag = CompoundTag()
+        val data = player.persistentData
+        val tier = data.getInt(RitualConstants.PENDING_TIER_TAG)
+        val bonusPercent = data.getInt(RitualConstants.PENDING_BONUS_PERCENT_TAG)
+        if (tier <= 0 || bonusPercent <= 0) {
+            tag.putBoolean("performed", false)
+            return tag
+        }
+
+        tag.putBoolean("performed", true)
+        tag.putInt("tier", tier)
+        tag.putInt("stat_bonus_percent", bonusPercent)
+        tag.putString("dagger", data.getString(RitualConstants.PENDING_DAGGER_TAG))
+        data.remove(RitualConstants.PENDING_TIER_TAG)
+        data.remove(RitualConstants.PENDING_BONUS_PERCENT_TAG)
+        data.remove(RitualConstants.PENDING_DAGGER_TAG)
         return tag
     }
 

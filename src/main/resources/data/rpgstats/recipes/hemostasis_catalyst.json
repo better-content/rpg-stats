@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " G ",
+    "MHM",
+    " G "
+  ],
+  "key": {
+    "G": { "item": "minecraft:gold_nugget" },
+    "M": { "item": "minecraft:glistering_melon_slice" },
+    "H": { "item": "rpgstats:heart_flesh" }
+  },
+  "result": {
+    "item": "rpgstats:hemostasis_catalyst",
+    "count": 2
+  }
+}

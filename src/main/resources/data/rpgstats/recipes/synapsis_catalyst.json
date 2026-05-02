@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " L ",
+    "RAR",
+    " L "
+  ],
+  "key": {
+    "L": { "item": "minecraft:lapis_lazuli" },
+    "R": { "item": "minecraft:redstone" },
+    "A": { "item": "minecraft:amethyst_shard" }
+  },
+  "result": {
+    "item": "rpgstats:synapsis_catalyst",
+    "count": 2
+  }
+}

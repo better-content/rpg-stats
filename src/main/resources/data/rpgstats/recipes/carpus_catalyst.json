@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " S ",
+    "RFR",
+    " S "
+  ],
+  "key": {
+    "S": { "item": "minecraft:sugar" },
+    "R": { "item": "minecraft:rabbit_foot" },
+    "F": { "item": "minecraft:feather" }
+  },
+  "result": {
+    "item": "rpgstats:carpus_catalyst",
+    "count": 2
+  }
+}

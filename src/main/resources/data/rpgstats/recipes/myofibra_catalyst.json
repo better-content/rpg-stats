@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " R ",
+    "BIB",
+    " R "
+  ],
+  "key": {
+    "R": { "item": "minecraft:redstone" },
+    "B": { "item": "minecraft:blaze_powder" },
+    "I": { "item": "minecraft:iron_ingot" }
+  },
+  "result": {
+    "item": "rpgstats:myofibra_catalyst",
+    "count": 2
+  }
+}

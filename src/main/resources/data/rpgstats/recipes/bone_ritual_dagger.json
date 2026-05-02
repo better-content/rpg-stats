@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " B ",
+    " F ",
+    " S "
+  ],
+  "key": {
+    "B": { "item": "minecraft:bone" },
+    "F": { "item": "minecraft:flint" },
+    "S": { "item": "minecraft:stick" }
+  },
+  "result": {
+    "item": "rpgstats:bone_ritual_dagger"
+  }
+}

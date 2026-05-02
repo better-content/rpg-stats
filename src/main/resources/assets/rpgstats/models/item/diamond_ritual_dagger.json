@@ -1,0 +1,6 @@
+{
+  "parent": "rpgstats:item/bone_ritual_dagger",
+  "textures": {
+    "layer0": "rpgstats:item/diamond_ritual_dagger"
+  }
+}
