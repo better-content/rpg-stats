@@ -23,8 +23,11 @@ data class HeartRequirements(
     val stats: Map<ResourceLocation, IntBounds> = emptyMap()
 ) {
     fun matches(data: CompoundTag): Boolean {
-        val playerTag = data.getCompound("player")
-        val levelValue = playerTag.getInt("experience_level")
+        val levelValue = if (data.contains("level", Tag.TAG_INT.toInt())) {
+            data.getInt("level")
+        } else {
+            data.getCompound("player").getInt("experience_level")
+        }
         if (!level.matches(levelValue)) return false
 
         val ritualTag = data.getCompound("ritual")

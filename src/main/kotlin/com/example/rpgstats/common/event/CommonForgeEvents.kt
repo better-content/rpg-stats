@@ -103,13 +103,22 @@ object CommonForgeEvents {
         val p = event.player
         if (p is ServerPlayer) {
             PointAwarder.tick(p)
+            StillBeatingHeartAltarHandler.discoverNear(p)
         }
+    }
+
+    @SubscribeEvent
+    fun onLevelTick(event: TickEvent.LevelTickEvent) {
+        if (event.phase != TickEvent.Phase.END || event.level.isClientSide) return
+        val level = event.level as? net.minecraft.server.level.ServerLevel ?: return
+        StillBeatingHeartAltarHandler.tickLevel(level)
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     fun onLivingDeath(event: LivingDeathEvent) {
         val player = event.entity as? ServerPlayer ?: return
         if (player.level().isClientSide || player.isSpectator) return
+        if (!StillBeatingHeartAltarHandler.isBloodMagicLoaded()) return
 
         val heart = StillBeatingHeartData.create(player, event.source)
         enqueuePendingHeart(player, heart)
