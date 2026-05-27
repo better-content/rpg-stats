@@ -70,6 +70,9 @@ dependencies {
     implementation fg.deobf("thedarkcolour:kotlinforforge:${kff_version}")
     compileOnly fg.deobf("dev.latvian.mods:kubejs-forge:2001.6.5-build.22")
     compileOnly fg.deobf("dev.latvian.mods:rhino-forge:2001.2.2-build.17")
+    testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5:2.0.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testImplementation 'com.google.code.gson:gson:2.10.1'
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
@@ -95,6 +98,10 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     kotlinOptions {
         jvmTarget = '17'
     }
+}
+
+test {
+    useJUnitPlatform()
 }
 
 tasks.named('jar', Jar).configure {
