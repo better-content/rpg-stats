@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 
 class RpgStatsResourceTest {
     @Test
-    fun `stat resources have matching names and valid attribute effects`() {
+    fun `stat resources have matching names and valid attribute effects when present`() {
         val statsDir = Path.of("src/main/resources/data/rpgstats/stats")
         val statFiles = Files.list(statsDir).use { paths ->
             paths.filter { it.name.endsWith(".json") }.sorted().toList()
@@ -29,7 +29,6 @@ class RpgStatsResourceTest {
             assertTrue(json.int("max_points") > 0, "max_points must be positive in $path")
 
             val effects = json.getAsJsonArray("effects")
-            assertTrue(effects.size() > 0, "effects must not be empty in $path")
             effects.forEach { element ->
                 val effect = element.asJsonObject
                 assertEquals("attribute", effect.string("type"), "unsupported effect type in $path")

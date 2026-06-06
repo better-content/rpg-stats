@@ -26,16 +26,6 @@
     },
     {
       "type": "attribute",
-      "attribute": "minecraft:generic.max_health",
-      "operation": "add",
-      "curve": {
-        "type": "linear",
-        "per_point": 0.1
-      },
-      "is_primary": false
-    },
-    {
-      "type": "attribute",
       "attribute": "cold_sweat:heat_resistance",
       "operation": "add",
       "curve": {

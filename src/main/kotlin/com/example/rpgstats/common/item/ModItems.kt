@@ -15,7 +15,7 @@ object ModItems {
     val STILL_BEATING_HEART: RegistryObject<Item> = ITEMS.register("still_beating_heart") {
         StillBeatingHeartItem(
             Item.Properties()
-                .stacksTo(1)
+                .stacksTo(64)
                 .rarity(Rarity.UNCOMMON),
             "item.rpgstats.still_beating_heart.named"
         )
