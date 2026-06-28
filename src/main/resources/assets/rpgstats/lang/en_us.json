@@ -32,7 +32,7 @@
   "item.rpgstats.osteon_heart": "Osteon Heart",
   "item.rpgstats.hemostasis_heart": "Hemostasis Heart",
   "item.rpgstats.carpus_heart": "Carpus Heart",
-  "item.rpgstats.still_beating_heart.tooltip.level": "Level: %s",
+  "item.rpgstats.still_beating_heart.tooltip.description": "It's Beating",
   "item.rpgstats.still_beating_heart.tooltip.altar_rate": "Blood Altar: %s LP/t",
   "item.rpgstats.still_beating_heart.tooltip.ritual": "Ritual tier %s: heart stats rolled +%s%%",
   "item.rpgstats.still_beating_heart.tooltip.more": "Enable advanced tooltips (F3 + H) for full snapshot",

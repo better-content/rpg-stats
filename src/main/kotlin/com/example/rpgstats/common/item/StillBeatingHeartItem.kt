@@ -1,7 +1,6 @@
 package com.example.rpgstats.common.item
 
 import com.example.rpgstats.common.heart.HeartTypeRegistry
-import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.sounds.SoundEvents
@@ -81,16 +80,13 @@ class StillBeatingHeartItem(
         tooltip: MutableList<Component>,
         flag: TooltipFlag
     ) {
-        val data = StillBeatingHeartData.getData(stack) ?: return
+        if (StillBeatingHeartData.getData(stack) == null) return
 
-        tooltip += Component.translatable(
-            "item.rpgstats.still_beating_heart.tooltip.level",
-            StillBeatingHeartData.getLevel(stack)
-        ).withStyle(ChatFormatting.BLUE)
+        tooltip += Component.translatable("item.rpgstats.still_beating_heart.tooltip.description")
         tooltip += Component.translatable(
             "item.rpgstats.still_beating_heart.tooltip.altar_rate",
             com.example.rpgstats.common.event.StillBeatingHeartAltarHandler.lpPerTick(StillBeatingHeartData.getLevel(stack))
-        ).withStyle(ChatFormatting.DARK_RED)
+        )
     }
 
 }
