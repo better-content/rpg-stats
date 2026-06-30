@@ -7,18 +7,12 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.Container
 import net.minecraft.world.item.ItemStack
 import net.minecraftforge.fml.ModList
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.pow
 
 object StillBeatingHeartAltarHandler {
     private const val BLOODMAGIC_MODID = "bloodmagic"
     private const val BLOOD_ALTAR_CLASS = "wayoftime.bloodmagic.common.tile.TileAltar"
     private const val DISCOVERY_RADIUS = 8
     private const val DISCOVERY_INTERVAL_TICKS = 20
-    private const val BASE_LP_PER_TICK = 5
-    private const val LEVELS_PER_DOUBLING = 10.0
-    private const val MAX_LP_PER_TICK = 4096
 
     private val trackedAltars = mutableMapOf<String, MutableSet<Long>>()
     private var fillMainTankMethod: java.lang.reflect.Method? = null
@@ -66,16 +60,32 @@ object StillBeatingHeartAltarHandler {
                 continue
             }
 
-            val inserted = fillAltar(blockEntity, lpPerTick(StillBeatingHeartData.getLevel(heart)))
+            val container = blockEntity as? Container
+            if (container == null) {
+                iterator.remove()
+                continue
+            }
+            val inserted = fillHeartContainer(
+                container,
+                isHeartItem = { stack -> stack.`is`(ModItems.STILL_BEATING_HEART.get()) },
+                fill = { amount -> fillAltar(blockEntity, amount) }
+            )
             if (inserted > 0) {
                 blockEntity.setChanged()
             }
         }
     }
 
-    fun lpPerTick(level: Int): Int {
-        val scaled = BASE_LP_PER_TICK * 2.0.pow(max(0, level) / LEVELS_PER_DOUBLING)
-        return min(MAX_LP_PER_TICK, max(1, scaled.toInt()))
+    fun lpPerTick(level: Int): Int = StillBeatingHeartData.lpPerTick(level)
+
+    internal fun fillHeartContainerForTests(container: Container, fill: (Int) -> Int): Int =
+        fillHeartContainer(container, isHeartItem = { true }, fill = fill)
+
+    private fun fillHeartContainer(container: Container, isHeartItem: (ItemStack) -> Boolean, fill: (Int) -> Int): Int {
+        if (container.containerSize <= 0) return 0
+        val stack = container.getItem(0)
+        if (stack.isEmpty || !isHeartItem(stack) || !StillBeatingHeartData.isValid(stack)) return 0
+        return fill(StillBeatingHeartData.lpPerTick(stack))
     }
 
     private fun heartIn(blockEntity: Any): ItemStack? {

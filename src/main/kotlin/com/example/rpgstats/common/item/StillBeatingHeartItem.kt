@@ -82,11 +82,14 @@ class StillBeatingHeartItem(
     ) {
         if (StillBeatingHeartData.getData(stack) == null) return
 
+        val level = StillBeatingHeartData.getLevel(stack)
         tooltip += Component.translatable("item.rpgstats.still_beating_heart.tooltip.description")
+        tooltip += Component.translatable("item.rpgstats.still_beating_heart.tooltip.level", level)
         tooltip += Component.translatable(
             "item.rpgstats.still_beating_heart.tooltip.altar_rate",
-            com.example.rpgstats.common.event.StillBeatingHeartAltarHandler.lpPerTick(StillBeatingHeartData.getLevel(stack))
+            StillBeatingHeartData.lpPerTick(level)
         )
+        tooltip += Component.translatable("item.rpgstats.still_beating_heart.tooltip.font")
     }
 
 }
