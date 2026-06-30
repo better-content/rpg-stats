@@ -25,6 +25,7 @@ object StillBeatingHeartData {
 
     @JvmStatic
     fun createForLevel(level: Int, item: Item): ItemStack {
+        if (level <= 0) return ItemStack.EMPTY
         val stack = ItemStack(item)
         val root = CompoundTag()
 
@@ -52,10 +53,11 @@ object StillBeatingHeartData {
     }
 
     @JvmStatic
-    fun isValid(stack: ItemStack): Boolean = getData(stack) != null
+    fun isValid(stack: ItemStack): Boolean = getLevel(stack) > 0
 
     @JvmStatic
     fun lpPerTick(level: Int): Int {
+        if (level <= 0) return 0
         val scaled = BASE_LP_PER_TICK * 2.0.pow(max(0, level) / LEVELS_PER_DOUBLING)
         return min(MAX_LP_PER_TICK, max(1, scaled.toInt()))
     }

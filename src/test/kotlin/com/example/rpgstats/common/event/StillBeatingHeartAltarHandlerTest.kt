@@ -37,6 +37,7 @@ class StillBeatingHeartAltarHandlerTest {
         listOf(
             SimpleContainer(ItemStack.EMPTY),
             SimpleContainer(ItemStack(Items.DIAMOND)),
+            SimpleContainer(StillBeatingHeartData.createForLevel(0, Items.DIAMOND)),
             SimpleContainer(0)
         ).forEach { container ->
             var called = false

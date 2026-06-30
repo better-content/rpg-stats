@@ -54,7 +54,7 @@ class StillBeatingHeartDataTest {
 
     @Test
     fun `lp formula is stable and clamps high levels`() {
-        assertEquals(5, StillBeatingHeartData.lpPerTick(0))
+        assertEquals(0, StillBeatingHeartData.lpPerTick(0))
         assertEquals(5, StillBeatingHeartData.lpPerTick(1))
         assertEquals(10, StillBeatingHeartData.lpPerTick(10))
         assertEquals(20, StillBeatingHeartData.lpPerTick(20))
@@ -64,7 +64,17 @@ class StillBeatingHeartDataTest {
     @Test
     fun `negative levels are normalized on write`() {
         val stack = StillBeatingHeartData.createForLevel(-10, Items.DIAMOND)
-        assertTrue(StillBeatingHeartData.isValid(stack))
+        assertFalse(StillBeatingHeartData.isValid(stack))
+        assertTrue(stack.isEmpty)
         assertEquals(0, StillBeatingHeartData.getLevel(stack))
+    }
+
+    @Test
+    fun `level zero does not create a still beating heart`() {
+        val stack = StillBeatingHeartData.createForLevel(0, Items.DIAMOND)
+
+        assertTrue(stack.isEmpty)
+        assertFalse(StillBeatingHeartData.isValid(stack))
+        assertEquals(0, StillBeatingHeartData.lpPerTick(stack))
     }
 }
