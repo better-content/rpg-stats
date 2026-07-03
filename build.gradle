@@ -108,6 +108,19 @@ tasks.named('jar', Jar).configure {
     finalizedBy 'reobfJar'
 }
 
+tasks.register('stageRuntimeJar', Copy) {
+    group = 'build'
+    description = 'Stages the reobfuscated runtime jar into build/libs using the canonical release filename.'
+    dependsOn tasks.named('reobfJar')
+    from layout.buildDirectory.file('reobfJar/output.jar')
+    into layout.buildDirectory.dir('libs')
+    rename { "${project.base.archivesName.get()}-${project.version}.jar" }
+}
+
+tasks.named('assemble').configure {
+    dependsOn tasks.named('stageRuntimeJar')
+}
+
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
