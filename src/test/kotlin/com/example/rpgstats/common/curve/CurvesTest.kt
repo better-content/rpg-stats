@@ -17,11 +17,12 @@ class CurvesTest {
 
     @Test
     fun `exponential uses positive fallback k and bounds output`() {
-        val curve = CurveDef(type = "exp", cap = 100.0, k = 0.0, min = 0.0, max = 50.0)
-        val expected = 100.0 * (1.0 - exp(-1.0))
+        val curve = CurveDef(type = "exp", cap = 100.0, k = 0.0, min = 0.0, max = 100.0)
+        val expectedAtOnePoint = 100.0 * (1.0 - exp(-1.0))
+        val expectedAtTwoPoints = 100.0 * (1.0 - exp(-2.0))
 
-        assertEquals(50.0, Curves.eval(1, curve))
-        assertEquals(expected.coerceIn(0.0, 50.0), Curves.eval(1, curve))
+        assertEquals(expectedAtOnePoint, Curves.eval(1, curve))
+        assertEquals(expectedAtTwoPoints, Curves.eval(2, curve))
     }
 
     @Test
