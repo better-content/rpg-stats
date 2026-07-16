@@ -12,6 +12,7 @@ import kotlin.math.pow
 
 object StillBeatingHeartData {
     const val DATA_TAG: String = "StillBeatingHeartData"
+    private const val CAPTURED_DEATH_LEVEL_TAG: String = "rpgstats_captured_death_level"
     private const val SCHEMA_VERSION: Int = 2
     private const val BASE_LP_PER_TICK: Int = 5
     private const val LEVELS_PER_DOUBLING: Double = 10.0
@@ -34,6 +35,18 @@ object StillBeatingHeartData {
 
         stack.orCreateTag.put(DATA_TAG, root)
         return stack
+    }
+
+    @JvmStatic
+    fun captureDeathLevel(persistentData: CompoundTag, level: Int) {
+        persistentData.putInt(CAPTURED_DEATH_LEVEL_TAG, level.coerceAtLeast(0))
+    }
+
+    @JvmStatic
+    fun consumeCapturedDeathLevel(persistentData: CompoundTag): Int {
+        val level = persistentData.getInt(CAPTURED_DEATH_LEVEL_TAG).coerceAtLeast(0)
+        persistentData.remove(CAPTURED_DEATH_LEVEL_TAG)
+        return level
     }
 
     @JvmStatic

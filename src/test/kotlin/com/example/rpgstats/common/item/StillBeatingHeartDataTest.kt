@@ -77,4 +77,16 @@ class StillBeatingHeartDataTest {
         assertFalse(StillBeatingHeartData.isValid(stack))
         assertEquals(0, StillBeatingHeartData.lpPerTick(stack))
     }
+
+    @Test
+    fun `captured death level survives another handler clearing player xp`() {
+        val persistentData = CompoundTag()
+
+        StillBeatingHeartData.captureDeathLevel(persistentData, 2)
+        val playerLevelAfterConfigurableDeath = 0
+
+        assertEquals(0, playerLevelAfterConfigurableDeath)
+        assertEquals(2, StillBeatingHeartData.consumeCapturedDeathLevel(persistentData))
+        assertEquals(0, StillBeatingHeartData.consumeCapturedDeathLevel(persistentData))
+    }
 }

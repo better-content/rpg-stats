@@ -4,6 +4,7 @@ import com.example.rpgstats.RpgStatsMod
 import com.example.rpgstats.common.attribute.StatAttributeProjector
 import com.example.rpgstats.common.data.PlayerStatsProvider
 import com.example.rpgstats.common.data.StatsCap
+import com.example.rpgstats.common.item.ModItems
 import com.example.rpgstats.common.item.StillBeatingHeartData
 import com.example.rpgstats.common.network.Network
 import com.example.rpgstats.common.points.PointAwarder
@@ -114,13 +115,26 @@ object CommonForgeEvents {
         StillBeatingHeartAltarHandler.tickLevel(level)
     }
 
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    fun onLivingDeathCaptureLevel(event: LivingDeathEvent) {
+        val player = event.entity as? ServerPlayer ?: return
+        if (player.level().isClientSide || player.isSpectator) return
+        if (!StillBeatingHeartAltarHandler.isBloodMagicLoaded()) return
+
+        // Configurable Death clears XP in its normal-priority death handler. Snapshot the
+        // level before that happens, but wait until LOWEST to confirm the death survived
+        // any cancellation before creating the heart.
+        StillBeatingHeartData.captureDeathLevel(player.persistentData, player.experienceLevel)
+    }
+
     @SubscribeEvent(priority = EventPriority.LOWEST)
     fun onLivingDeath(event: LivingDeathEvent) {
         val player = event.entity as? ServerPlayer ?: return
         if (player.level().isClientSide || player.isSpectator) return
         if (!StillBeatingHeartAltarHandler.isBloodMagicLoaded()) return
 
-        val heart = StillBeatingHeartData.create(player, event.source)
+        val capturedLevel = StillBeatingHeartData.consumeCapturedDeathLevel(player.persistentData)
+        val heart = StillBeatingHeartData.createForLevel(capturedLevel, ModItems.STILL_BEATING_HEART.get())
         enqueuePendingHeart(player, heart)
     }
 
