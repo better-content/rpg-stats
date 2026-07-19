@@ -189,16 +189,28 @@ object CommonForgeEvents {
     }
 
     private fun tryInsertHeart(player: ServerPlayer, stack: ItemStack): Boolean {
-        val remaining = stack.copy()
-        if (player.inventory.add(remaining) || remaining.isEmpty) return true
+        // Never call Inventory.add here: it merges into the first compatible stack or fills
+        // the first empty slot, which changes the player's deliberately arranged layout.
+        val destination = PendingHeartSlotPolicy.lastEmptySlot(
+            player.inventory.items.indices.map { player.inventory.getItem(it).isEmpty }
+        )
+        if (destination != null) {
+            val slot = destination
+            player.inventory.setItem(slot, stack.copy())
+            return true
+        }
 
         val enderChest = player.enderChestInventory
         for (slot in 0 until enderChest.containerSize) {
             if (!enderChest.getItem(slot).isEmpty) continue
-            enderChest.setItem(slot, remaining.copy())
+            enderChest.setItem(slot, stack.copy())
             return true
         }
 
         return false
     }
+}
+
+internal object PendingHeartSlotPolicy {
+    fun lastEmptySlot(emptySlots: List<Boolean>): Int? = emptySlots.indices.reversed().firstOrNull { emptySlots[it] }
 }
