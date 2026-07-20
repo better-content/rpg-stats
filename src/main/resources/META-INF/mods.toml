@@ -1,6 +1,6 @@
 modLoader="kotlinforforge"
 loaderVersion="[4.11,)"
-license="MIT"
+license="AGPL-3.0-or-later"
 
 [[mods]]
 modId="${mod_id}"
