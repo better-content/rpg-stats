@@ -1,6 +1,0 @@
-{
-  "parent": "rpgstats:item/bone_ritual_dagger",
-  "textures": {
-    "layer0": "rpgstats:item/gold_ritual_dagger"
-  }
-}

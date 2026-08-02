@@ -53,9 +53,5 @@ object StatAttributeProjector {
                 }
             }
         }
-
-        // Health clamp if max health changed.
-        val maxHealth = player.maxHealth
-        if (player.health > maxHealth) player.health = maxHealth
     }
 }

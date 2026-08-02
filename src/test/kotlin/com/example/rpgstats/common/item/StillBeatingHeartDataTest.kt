@@ -25,13 +25,13 @@ class StillBeatingHeartDataTest {
         val stack = StillBeatingHeartData.createForLevel(17, Items.DIAMOND)
         val data = assertNotNull(StillBeatingHeartData.getData(stack))
 
-        assertEquals(2, data.getInt("schema_version"))
+        assertEquals(3, data.getInt("schema_version"))
         assertEquals(17, data.getInt("level"))
         assertEquals(setOf("schema_version", "level"), data.allKeys)
     }
 
     @Test
-    fun `level reads new and legacy schemas`() {
+    fun `level reads current schema only`() {
         val modern = StillBeatingHeartData.createForLevel(24, Items.DIAMOND)
         assertEquals(24, StillBeatingHeartData.getLevel(modern))
 
@@ -42,7 +42,7 @@ class StillBeatingHeartDataTest {
         val legacy = ItemStack(Items.DIAMOND)
         legacy.orCreateTag.put(StillBeatingHeartData.DATA_TAG, legacyData)
 
-        assertEquals(31, StillBeatingHeartData.getLevel(legacy))
+        assertEquals(0, StillBeatingHeartData.getLevel(legacy))
     }
 
     @Test

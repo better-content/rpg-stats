@@ -11,6 +11,16 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class RpgStatsResourceTest {
+    private val expectedStats = setOf(
+        "attack_damage",
+        "attack_speed",
+        "hunger_efficiency",
+        "mining_speed",
+        "movement_speed",
+        "temperature_resistance",
+        "thirst_efficiency"
+    )
+
     @Test
     fun `stat resources have matching names and valid attribute effects when present`() {
         val statsDir = Path.of("src/main/resources/data/rpgstats/stats")
@@ -18,7 +28,7 @@ class RpgStatsResourceTest {
             paths.filter { it.name.endsWith(".json") }.sorted().toList()
         }
 
-        assertFalse(statFiles.isEmpty(), "expected stat JSON resources")
+        assertEquals(expectedStats, statFiles.map { it.name.removeSuffix(".json") }.toSet())
 
         statFiles.forEach { path ->
             val id = path.fileName.toString().removeSuffix(".json")
@@ -29,13 +39,30 @@ class RpgStatsResourceTest {
             assertTrue(json.int("max_points") > 0, "max_points must be positive in $path")
 
             val effects = json.getAsJsonArray("effects")
+            assertFalse(effects.isEmpty, "dead stat definition in $path")
             effects.forEach { element ->
                 val effect = element.asJsonObject
                 assertEquals("attribute", effect.string("type"), "unsupported effect type in $path")
                 assertTrue(effect.string("attribute").contains(":"), "attribute must be namespaced in $path")
                 assertTrue(effect.string("operation") in setOf("add", "multiply_base", "multiply_total"))
+                val attribute = effect.string("attribute")
+                assertFalse(attribute.contains("max_health"), "health scaling is forbidden in $path")
+                assertFalse(attribute.contains("regeneration"), "regeneration scaling is forbidden in $path")
+                assertFalse(attribute.contains("healing_received"), "healing scaling is forbidden in $path")
                 validateCurve(effect.getAsJsonObject("curve"), path)
             }
+        }
+    }
+
+    @Test
+    fun `efficiency stats grant four percent per point`() {
+        listOf("hunger_efficiency", "thirst_efficiency").forEach { id ->
+            val path = Path.of("src/main/resources/data/rpgstats/stats/$id.json")
+            val json = Files.newBufferedReader(path).use { JsonParser.parseReader(it).asJsonObject }
+            val effect = json.getAsJsonArray("effects").single().asJsonObject
+            assertEquals("rpgstats:$id", effect.string("attribute"))
+            assertEquals("multiply_base", effect.string("operation"))
+            assertEquals(0.04, effect.getAsJsonObject("curve").double("per_point"), 0.000001)
         }
     }
 

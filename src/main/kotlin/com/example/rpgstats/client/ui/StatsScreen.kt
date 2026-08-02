@@ -16,6 +16,18 @@ import kotlin.math.abs
 
 class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
 
+    private companion object {
+        const val ROW_HEIGHT = 36
+    }
+
+    private data class Layout(
+        val leftX: Int,
+        val rightX: Int,
+        val topY: Int,
+        val columnWidth: Int,
+        val viewportHeight: Int
+    )
+
     private data class Row(
         val def: ClientStatDef,
         var y: Int = 0,
@@ -49,23 +61,15 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
         workingUnspent = snap.unspent
         lifePeak = snap.lifePeak
 
-        val centerX = this.width / 2
-        val centerY = this.height / 2
-
-        // Left column: Attribute editing
-        val leftX = centerX - 250
-        val leftY = centerY - 80
-        val lineH = 28
+        val layout = layout()
+        val leftX = layout.leftX
+        val leftY = layout.topY
         val headerOffset = 30
-
-        // Right column: Stats display (wider for current → new format)
-        val rightX = centerX + 10
-        val rightY = centerY - 80
 
         rows = defs.map { d -> Row(d) }
 
         rows.forEachIndexed { idx, row ->
-            val y = leftY + headerOffset + idx * lineH
+            val y = leftY + headerOffset + idx * ROW_HEIGHT
             row.y = y
 
             val minusBtn = Button.builder(Component.literal("-")) {
@@ -79,7 +83,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
                     workingUnspent += 1
                     refreshButtons()
                 }
-            }.pos(leftX + 188, y + 6).size(18, 14).build()
+            }.pos(leftX + layout.columnWidth - 42, y + 20).size(18, 14).build()
 
             val plusBtn = Button.builder(Component.literal("+")) {
                 val cur = workingAlloc[row.def.id] ?: 0
@@ -89,7 +93,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
                     workingUnspent -= 1
                     refreshButtons()
                 }
-            }.pos(leftX + 208, y + 6).size(18, 14).build()
+            }.pos(leftX + layout.columnWidth - 20, y + 20).size(18, 14).build()
 
             row.minus = minusBtn
             row.plus = plusBtn
@@ -97,7 +101,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
             addRenderableWidget(plusBtn)
         }
 
-        val btnY = leftY + headerOffset + rows.size * lineH + 12
+        val btnY = leftY + headerOffset + rows.size * ROW_HEIGHT + 12
         applyButton = Button.builder(Component.translatable("screen.rpgstats.apply")) {
             Network.sendToServer(C2SApplyStats(workingAlloc.toMap()))
             this.onClose()
@@ -138,17 +142,14 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
         this.renderBackground(guiGraphics)
         super.render(guiGraphics, mouseX, mouseY, partialTick)
 
+        val layout = layout()
         val centerX = this.width / 2
-        val centerY = this.height / 2
-        val leftX = centerX - 250
-        val leftY = centerY - 80
-        val rightX = centerX + 10
-        val rightY = centerY - 80
+        val leftX = layout.leftX
+        val leftY = layout.topY
+        val rightX = layout.rightX
+        val rightY = layout.topY
         val headerOffset = 30
-        val lineH = 28
-
-        // Calculate viewport height (from header to bottom, leaving room for buttons)
-        val viewportHeight = this.height - leftY - headerOffset - 50
+        val viewportHeight = layout.viewportHeight
 
         // Title at top center
         val titleWidth = this.font.width(this.title)
@@ -172,10 +173,10 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
         )
 
         // Calculate left content height
-        leftContentHeight = rows.size * lineH
+        leftContentHeight = rows.size * ROW_HEIGHT
 
         // Enable scissor for left column
-        guiGraphics.enableScissor(leftX, leftY + headerOffset, leftX + 240, leftY + headerOffset + viewportHeight)
+        guiGraphics.enableScissor(leftX, leftY + headerOffset, leftX + layout.columnWidth, leftY + headerOffset + viewportHeight)
 
         // Left column: Attribute editing with scroll offset
         rows.forEach { row ->
@@ -219,8 +220,8 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
             guiGraphics.drawString(
                 this.font,
                 Component.literal(formatPointCounter(row.def, pts)),
-                leftX + 128,
-                scrolledY,
+                leftX + layout.columnWidth - 82,
+                scrolledY + 22,
                 0xE0E0E0,
                 false
             )
@@ -246,18 +247,18 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
         )
 
         // Enable scissor for right column
-        guiGraphics.enableScissor(rightX, rightY + headerOffset, rightX + 240, rightY + headerOffset + viewportHeight)
+        guiGraphics.enableScissor(rightX, rightY + headerOffset, rightX + layout.columnWidth, rightY + headerOffset + viewportHeight)
 
         // Right column: Stats with diff
-        renderStatsColumn(guiGraphics, rightX, rightY + headerOffset)
+        renderStatsColumn(guiGraphics, rightX, rightY + headerOffset, layout.columnWidth)
 
         guiGraphics.disableScissor()
 
         // Render tooltips for left column attribute rows
         rows.forEachIndexed { idx, row ->
-            val rowY = leftY + headerOffset + idx * lineH - leftScrollOffset.toInt()
-            val rowHeight = lineH - 4
-            val textWidth = 182
+            val rowY = leftY + headerOffset + idx * ROW_HEIGHT - leftScrollOffset.toInt()
+            val rowHeight = ROW_HEIGHT - 4
+            val textWidth = layout.columnWidth - 96
 
             if (mouseX >= leftX && mouseX <= leftX + textWidth &&
                 mouseY >= rowY && mouseY <= rowY + rowHeight &&
@@ -270,24 +271,23 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollDelta: Double): Boolean {
-        val centerX = this.width / 2
-        val centerY = this.height / 2
-        val leftX = centerX - 250
-        val leftY = centerY - 80
-        val rightX = centerX + 10
-        val rightY = centerY - 80
+        val layout = layout()
+        val leftX = layout.leftX
+        val leftY = layout.topY
+        val rightX = layout.rightX
+        val rightY = layout.topY
         val headerOffset = 30
-        val viewportHeight = this.height - leftY - headerOffset - 50
+        val viewportHeight = layout.viewportHeight
 
         // Check if mouse is over left column
-        if (mouseX >= leftX && mouseX <= leftX + 240 && mouseY >= leftY + headerOffset && mouseY <= leftY + headerOffset + viewportHeight) {
+        if (mouseX >= leftX && mouseX <= leftX + layout.columnWidth && mouseY >= leftY + headerOffset && mouseY <= leftY + headerOffset + viewportHeight) {
             val maxScroll = maxOf(0, leftContentHeight - viewportHeight)
             leftScrollOffset = Mth.clamp(leftScrollOffset - scrollDelta * 10, 0.0, maxScroll.toDouble())
             return true
         }
 
         // Check if mouse is over right column
-        if (mouseX >= rightX && mouseX <= rightX + 240 && mouseY >= rightY + headerOffset && mouseY <= rightY + headerOffset + viewportHeight) {
+        if (mouseX >= rightX && mouseX <= rightX + layout.columnWidth && mouseY >= rightY + headerOffset && mouseY <= rightY + headerOffset + viewportHeight) {
             val maxScroll = maxOf(0, rightContentHeight - viewportHeight)
             rightScrollOffset = Mth.clamp(rightScrollOffset - scrollDelta * 10, 0.0, maxScroll.toDouble())
             return true
@@ -296,8 +296,8 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
         return super.mouseScrolled(mouseX, mouseY, scrollDelta)
     }
 
-    private fun renderStatsColumn(guiGraphics: GuiGraphics, x: Int, startY: Int) {
-        val lineH = 18
+    private fun renderStatsColumn(guiGraphics: GuiGraphics, x: Int, startY: Int, columnWidth: Int) {
+        val lineH = 24
         var y = startY - rightScrollOffset.toInt()
         var lineCount = 0
 
@@ -384,13 +384,26 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
                 // Draw attribute name in primary provider's color
                 guiGraphics.drawString(this.font, attrInfo.friendlyName, x, y, color, false)
 
-                // Draw "Current → New" or just "Current" if unchanged
+                // Put values on their own line so narrow GUI scales remain readable.
                 if (valueChanged) {
-                    guiGraphics.drawString(this.font, originalStr, x + 130, y, color, false)
-                    guiGraphics.drawString(this.font, "→", x + 180, y, color, false)
-                    guiGraphics.drawString(this.font, workingStr, x + 195, y, color, false)
+                    val comparison = "$originalStr → $workingStr"
+                    guiGraphics.drawString(
+                        this.font,
+                        comparison,
+                        x + columnWidth - this.font.width(comparison),
+                        y + 11,
+                        color,
+                        false
+                    )
                 } else {
-                    guiGraphics.drawString(this.font, originalStr, x + 130, y, color, false)
+                    guiGraphics.drawString(
+                        this.font,
+                        originalStr,
+                        x + columnWidth - this.font.width(originalStr),
+                        y + 11,
+                        color,
+                        false
+                    )
                 }
 
                 y += lineH
@@ -540,4 +553,14 @@ class StatsScreen : Screen(Component.translatable("screen.rpgstats.title")) {
     }
 
     override fun isPauseScreen(): Boolean = false
+
+    private fun layout(): Layout {
+        val panelWidth = (width - 20).coerceIn(300, 570)
+        val gap = 20
+        val columnWidth = (panelWidth - gap) / 2
+        val leftX = (width - panelWidth) / 2
+        val topY = (height / 2 - 105).coerceAtLeast(30)
+        val viewportHeight = (height - topY - 80).coerceAtLeast(120)
+        return Layout(leftX, leftX + columnWidth + gap, topY, columnWidth, viewportHeight)
+    }
 }

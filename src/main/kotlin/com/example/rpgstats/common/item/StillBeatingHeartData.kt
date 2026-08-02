@@ -13,7 +13,7 @@ import kotlin.math.pow
 object StillBeatingHeartData {
     const val DATA_TAG: String = "StillBeatingHeartData"
     private const val CAPTURED_DEATH_LEVEL_TAG: String = "rpgstats_captured_death_level"
-    private const val SCHEMA_VERSION: Int = 2
+    private const val SCHEMA_VERSION: Int = 3
     private const val BASE_LP_PER_TICK: Int = 5
     private const val LEVELS_PER_DOUBLING: Double = 10.0
     private const val MAX_LP_PER_TICK: Int = 4096
@@ -59,10 +59,7 @@ object StillBeatingHeartData {
     @JvmStatic
     fun getLevel(stack: ItemStack): Int {
         val data = getData(stack) ?: return 0
-        if (data.contains("level", Tag.TAG_INT.toInt())) return data.getInt("level")
-
-        val legacyPlayer = data.getCompound("player")
-        return legacyPlayer.getInt("experience_level")
+        return data.getInt("level")
     }
 
     @JvmStatic

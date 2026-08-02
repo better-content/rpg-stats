@@ -1,6 +1,7 @@
 package com.example.rpgstats
 
 import com.example.rpgstats.common.item.ModItems
+import com.example.rpgstats.common.attribute.ModAttributes
 import com.example.rpgstats.common.network.Network
 import net.minecraftforge.eventbus.api.IEventBus
 import net.minecraftforge.fml.common.Mod
@@ -11,7 +12,9 @@ object RpgStatsMod {
     const val MODID: String = "rpgstats"
 
     init {
-        ModItems.register(resolveModEventBus())
+        val modBus = resolveModEventBus()
+        ModAttributes.register(modBus)
+        ModItems.register(modBus)
         Network.init()
         // Everything else is registered via @EventBusSubscriber objects.
     }

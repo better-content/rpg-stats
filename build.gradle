@@ -4,6 +4,12 @@ plugins {
     id 'net.minecraftforge.gradle' version '[6.0,6.2)'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
     id 'org.jetbrains.kotlin.jvm' version '2.0.0'
+    id 'org.spongepowered.mixin' version '0.7.+'
+}
+
+mixin {
+    add sourceSets.main, 'rpgstats.refmap.json'
+    config 'rpgstats.mixins.json'
 }
 
 version = mod_version
@@ -67,9 +73,8 @@ repositories {
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    annotationProcessor "org.spongepowered:mixin:0.8.5:processor"
     implementation fg.deobf("thedarkcolour:kotlinforforge:${kff_version}")
-    compileOnly fg.deobf("dev.latvian.mods:kubejs-forge:2001.6.5-build.22")
-    compileOnly fg.deobf("dev.latvian.mods:rhino-forge:2001.2.2-build.17")
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5:2.0.0'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testImplementation 'com.google.code.gson:gson:2.10.1'

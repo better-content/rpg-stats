@@ -1,0 +1,17 @@
+{
+  "name_key": "stat.rpgstats.mining_speed",
+  "color": "#D29A48",
+  "max_points": 50,
+  "effects": [
+    {
+      "type": "attribute",
+      "attribute": "attributeslib:mining_speed",
+      "operation": "multiply_base",
+      "curve": {
+        "type": "linear",
+        "per_point": 0.045
+      },
+      "is_primary": true
+    }
+  ]
+}

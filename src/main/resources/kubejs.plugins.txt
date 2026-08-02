@@ -1,1 +1,0 @@
-com.example.rpgstats.kubejs.RpgStatsKubePlugin
