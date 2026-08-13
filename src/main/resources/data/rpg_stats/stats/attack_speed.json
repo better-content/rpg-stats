@@ -1,0 +1,17 @@
+{
+  "name_key": "stat.rpg_stats.attack_speed",
+  "color": "#8A79D6",
+  "max_points": 50,
+  "effects": [
+    {
+      "type": "attribute",
+      "attribute": "minecraft:generic.attack_speed",
+      "operation": "add",
+      "curve": {
+        "type": "linear",
+        "per_point": 0.032
+      },
+      "is_primary": true
+    }
+  ]
+}

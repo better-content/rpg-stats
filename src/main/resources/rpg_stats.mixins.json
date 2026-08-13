@@ -1,0 +1,15 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "com.bettercontent.rpgstats.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "rpg_stats.refmap.json",
+  "mixins": [
+    "FoodDataMixin",
+    "PlayerMixin",
+    "ThirstPlayerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

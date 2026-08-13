@@ -1,0 +1,17 @@
+{
+  "name_key": "stat.rpg_stats.attack_damage",
+  "color": "#C45A45",
+  "max_points": 50,
+  "effects": [
+    {
+      "type": "attribute",
+      "attribute": "minecraft:generic.attack_damage",
+      "operation": "add",
+      "curve": {
+        "type": "linear",
+        "per_point": 0.5
+      },
+      "is_primary": true
+    }
+  ]
+}

@@ -8,15 +8,15 @@ plugins {
 }
 
 mixin {
-    add sourceSets.main, 'rpgstats.refmap.json'
-    config 'rpgstats.mixins.json'
+    add sourceSets.main, 'rpg_stats.refmap.json'
+    config 'rpg_stats.mixins.json'
 }
 
 version = mod_version
 group = mod_group_id
 
 base {
-    archivesName = mod_id
+    archivesName = 'rpg-stats'
 }
 
 java {

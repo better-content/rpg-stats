@@ -1,0 +1,27 @@
+{
+  "name_key": "stat.rpg_stats.temperature_resistance",
+  "color": "#62AFC6",
+  "max_points": 50,
+  "effects": [
+    {
+      "type": "attribute",
+      "attribute": "cold_sweat:heat_resistance",
+      "operation": "add",
+      "curve": {
+        "type": "linear",
+        "per_point": 0.02
+      },
+      "is_primary": true
+    },
+    {
+      "type": "attribute",
+      "attribute": "cold_sweat:cold_resistance",
+      "operation": "add",
+      "curve": {
+        "type": "linear",
+        "per_point": 0.02
+      },
+      "is_primary": true
+    }
+  ]
+}

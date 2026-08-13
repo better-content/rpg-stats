@@ -15,8 +15,17 @@ Pack-owned RPG stats and diminishing-returns system for Forge `1.20.1`.
 
 Deploy the reobfuscated runtime jar from:
 
-- `build/libs/rpgstats-<version>.jar`
+- `build/libs/rpg_stats-<version>.jar`
 
 ## Community and support
 
 For modpack and mod discussion, playtest feedback, and bug reports, join the [Better Content Discord](https://discord.gg/EkRnZbzqS9).
+
+## Canonical identity
+
+- Repository and release artifact: `rpg-stats`
+- Mod ID and resource namespace: `rpg_stats`
+- Java package: `com.bettercontent.rpgstats`
+- Validation: `./gradlew verifyFull`
+
+This normalization is a clean break. Worlds, configuration files, and integrations created for earlier identities are not migrated or aliased.
