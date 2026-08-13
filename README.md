@@ -15,7 +15,7 @@ Pack-owned RPG stats and diminishing-returns system for Forge `1.20.1`.
 
 Deploy the reobfuscated runtime jar from:
 
-- `build/libs/rpg_stats-<version>.jar`
+- `build/libs/rpg-stats-<version>.jar`
 
 ## Community and support
 
