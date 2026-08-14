@@ -9,6 +9,16 @@ Pack-owned RPG stats and diminishing-returns system for Forge `1.20.1`.
 ./gradlew verifyFull
 ```
 
+For an isolated 1280×720, GUI-scale-2 visual fixture containing only Minecraft, the RPG Stats
+runtime, and development harness code, run:
+
+```bash
+./gradlew runVisualHarness
+```
+
+The client opens the seeded stats screen, writes a screenshot under
+`run-visual-harness/screenshots/`, and exits automatically.
+
 `verifyFull` currently matches `verifyFast`; this repo does not yet expose a distinct GameTest or coverage-enforced full lane.
 
 ## Release artifact

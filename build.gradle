@@ -25,6 +25,18 @@ java {
     }
 }
 
+sourceSets {
+    visualHarness {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
+configurations {
+    visualHarnessImplementation.extendsFrom implementation
+    visualHarnessRuntimeOnly.extendsFrom runtimeOnly
+}
+
 minecraft {
     mappings channel: 'parchment', version: parchment_mappings
 
@@ -37,6 +49,21 @@ minecraft {
             mods {
                 "${mod_id}" {
                     source sourceSets.main
+                }
+            }
+        }
+
+        visualHarness {
+            parent minecraft.runs.client
+            client true
+            workingDirectory project.file('run-visual-harness')
+            property 'forge.logging.console.level', 'info'
+            property 'rpg_stats.visualHarness', 'true'
+            args '--width', '1280', '--height', '720'
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                    source sourceSets.visualHarness
                 }
             }
         }
@@ -119,6 +146,19 @@ tasks.register('verifyFull') {
     group = 'verification'
     description = 'Runs the full verification lane. This project currently has no higher-signal lane beyond verifyFast.'
     dependsOn tasks.named('verifyFast')
+}
+
+tasks.register('prepareVisualHarnessOptions', Copy) {
+    group = 'verification'
+    description = 'Installs deterministic GUI settings for the isolated visual harness.'
+    from 'src/visualHarness/options.txt'
+    into 'run-visual-harness'
+}
+
+tasks.configureEach {
+    if (name == 'runVisualHarness') {
+        dependsOn tasks.named('prepareVisualHarnessOptions')
+    }
 }
 
 tasks.named('jar', Jar).configure {

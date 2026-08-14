@@ -1,0 +1,5 @@
+version:3465
+guiScale:2
+forceUnicodeFont:false
+fullscreen:false
+onboardAccessibility:false
