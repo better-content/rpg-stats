@@ -16,7 +16,7 @@ The stats screen is a **character ledger**: the left side records the points the
 2. A quiet summary strip pairs **Points available** with **Life peak**.
 3. Column headers state the relationship: **Allocate points** on the left and **Resulting properties** on the right.
 4. Rows use a stable pattern: name first, explanatory property second, numeric state aligned at the trailing edge.
-5. Apply and Reset are visually separated from the data and remain in predictable positions.
+5. Apply is visually separated from the data and remains centered in a predictable position.
 
 Color identifies a stat family; it does not carry meaning alone. Primary text stays high-contrast, secondary explanations use neutral gray, pending increases use green, and pending decreases use red. Panel surfaces, rules, alignment, labels, and signs must still communicate the screen in grayscale.
 
@@ -33,10 +33,10 @@ The left row states the next-point effect in plain language: `Next point: +0.25 
 
 ## Interaction and states
 
-- Minus, point count, and plus form one right-aligned control group with symmetric gaps and equal button sizes.
+- Minus, point count, and plus form one right-aligned control group with symmetric gaps and equal button sizes. Minus only undoes points added in the current draft; committed points remain locked until death.
 - Disabled controls remain legible but quiet. Hovered rows get a restrained surface highlight, not a layout shift.
 - Scroll regions show a scrollbar when content overflows, and buttons move and clip with their rows.
-- Pending edits are the only animated or bright state. Applying commits the draft; Reset restores the current allocation draft to zero as before.
+- Pending edits are the only animated or bright state. Applying commits the draft; closing the screen discards it. Death is the only event that resets committed allocations.
 - Tooltips provide full effect breakdowns, but the base screen must explain the primary effect without requiring hover.
 
 ## Review checklist

@@ -1,7 +1,6 @@
 {
   "name_key": "stat.rpg_stats.thirst_efficiency",
   "color": "#3F8FD2",
-  "max_points": 50,
   "effects": [
     {
       "type": "attribute",

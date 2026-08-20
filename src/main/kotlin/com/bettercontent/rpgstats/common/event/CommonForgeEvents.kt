@@ -1,6 +1,8 @@
 package com.bettercontent.rpgstats.common.event
 
 import com.bettercontent.rpgstats.RpgStatsMod
+import com.bettercontent.rpgstats.common.attribute.MiningSpeedScaling
+import com.bettercontent.rpgstats.common.attribute.ModAttributes
 import com.bettercontent.rpgstats.common.attribute.StatAttributeProjector
 import com.bettercontent.rpgstats.common.data.PlayerStatsProvider
 import com.bettercontent.rpgstats.common.data.StatsCap
@@ -49,14 +51,16 @@ object CommonForgeEvents {
         val oldP = event.original
         val newP = event.entity
 
-        oldP.getCapability(StatsCap.CAP).ifPresent { oldStats ->
+        if (event.isWasDeath) {
             newP.getCapability(StatsCap.CAP).ifPresent { newStats ->
-                if (event.isWasDeath) {
-                    // Wipe, but baseline peak to current XP level to avoid instant refunds on keep-XP rules.
-                    newStats.lifePeakLevel = (newP as? ServerPlayer)?.experienceLevel ?: 0
-                    newStats.unspentPoints = 0
-                    newStats.allocations.clear()
-                } else {
+                // Wipe, but baseline peak to current XP level to avoid instant refunds on keep-XP rules.
+                newStats.lifePeakLevel = (newP as? ServerPlayer)?.experienceLevel ?: 0
+                newStats.unspentPoints = 0
+                newStats.allocations.clear()
+            }
+        } else {
+            oldP.getCapability(StatsCap.CAP).ifPresent { oldStats ->
+                newP.getCapability(StatsCap.CAP).ifPresent { newStats ->
                     newStats.lifePeakLevel = oldStats.lifePeakLevel
                     newStats.unspentPoints = oldStats.unspentPoints
                     newStats.allocations.clear()
@@ -96,6 +100,12 @@ object CommonForgeEvents {
             StatAttributeProjector.reapply(p)
             Network.syncTo(p)
         }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    fun onBreakSpeed(event: PlayerEvent.BreakSpeed) {
+        val multiplier = event.entity.getAttributeValue(ModAttributes.MINING_SPEED.get())
+        event.newSpeed = MiningSpeedScaling.scale(event.newSpeed, multiplier)
     }
 
     @SubscribeEvent

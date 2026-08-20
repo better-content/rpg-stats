@@ -20,16 +20,4 @@ object PointAwarder {
             Network.syncTo(player)
         }
     }
-
-    /**
-     * Reset the "life" ledger.
-     * Baselines peak to current level so a keep-XP-on-death rule doesn't instantly refund points.
-     */
-    fun resetLife(player: ServerPlayer) {
-        val stats = StatsCap.get(player) ?: return
-        stats.lifePeakLevel = player.experienceLevel
-        stats.unspentPoints = 0
-        stats.allocations.clear()
-        Network.syncTo(player)
-    }
 }

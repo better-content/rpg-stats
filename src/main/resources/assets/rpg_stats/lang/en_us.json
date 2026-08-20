@@ -7,7 +7,6 @@
   "screen.rpg_stats.unspent": "Points available: %s",
   "screen.rpg_stats.life_peak": "Life peak: level %s",
   "screen.rpg_stats.apply": "Apply",
-  "screen.rpg_stats.reset": "Reset All",
   "screen.rpg_stats.next_point": "Next: %s %s",
   "screen.rpg_stats.next_point_same": "Next point: %s",
   "screen.rpg_stats.more_effects": " · %s more",
@@ -30,12 +29,13 @@
 
   "attribute.name.rpg_stats.hunger_efficiency": "Hunger Efficiency",
   "attribute.name.rpg_stats.thirst_efficiency": "Thirst Efficiency",
+  "attribute.name.rpg_stats.mining_speed": "Mining Speed",
   "attr.rpg_stats.hunger_efficiency": "Hunger Efficiency",
   "attr.rpg_stats.thirst_efficiency": "Thirst Efficiency",
+  "attr.rpg_stats.mining_speed": "Mining Speed",
   "attr.minecraft.generic.attack_damage": "Attack Damage",
   "attr.minecraft.generic.attack_speed": "Attack Speed",
   "attr.minecraft.generic.movement_speed": "Movement Speed",
-  "attr.attributeslib.mining_speed": "Mining Speed",
   "attr.cold_sweat.heat_resistance": "Heat Resistance",
   "attr.cold_sweat.cold_resistance": "Cold Resistance",
 

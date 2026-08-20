@@ -1,7 +1,6 @@
 {
   "name_key": "stat.rpg_stats.attack_damage",
   "color": "#C45A45",
-  "max_points": 50,
   "effects": [
     {
       "type": "attribute",

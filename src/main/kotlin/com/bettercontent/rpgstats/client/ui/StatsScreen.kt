@@ -87,7 +87,6 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
     private var workingUnspent = 0
     private var lifePeak = 0
     private var applyButton: Button? = null
-    private var resetButton: Button? = null
     private var leftScrollOffset = 0.0
     private var rightScrollOffset = 0.0
     private var leftContentHeight = 0
@@ -114,18 +113,11 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
         }
 
         val actionWidth = 80
-        val actionGap = 8
-        val actionsX = width / 2 - (actionWidth * 2 + actionGap) / 2
         val actionY = layout.footerTop + 7
-        resetButton = Button.builder(Component.translatable("screen.rpg_stats.reset")) {
-            workingUnspent += workingAlloc.values.sum()
-            workingAlloc.clear()
-            refreshButtons()
-        }.pos(actionsX, actionY).size(actionWidth, 18).build().also(::addRenderableWidget)
         applyButton = Button.builder(Component.translatable("screen.rpg_stats.apply")) {
             Network.sendToServer(C2SApplyStats(workingAlloc.toMap()))
             onClose()
-        }.pos(actionsX + actionWidth + actionGap, actionY).size(actionWidth, 18).build().also(::addRenderableWidget)
+        }.pos(width / 2 - actionWidth / 2, actionY).size(actionWidth, 18).build().also(::addRenderableWidget)
 
         refreshButtons()
         syncRowButtons(layout)
@@ -143,8 +135,10 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
 
     private fun decrement(row: Row) {
         val current = workingAlloc[row.def.id] ?: 0
-        if (current > 0) {
-            if (current == 1) workingAlloc.remove(row.def.id) else workingAlloc[row.def.id] = current - 1
+        val committed = originalAlloc[row.def.id] ?: 0
+        if (current > committed) {
+            val next = current - 1
+            if (next == 0) workingAlloc.remove(row.def.id) else workingAlloc[row.def.id] = next
             workingUnspent++
             refreshButtons()
         }
@@ -152,18 +146,15 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
 
     private fun refreshButtons() {
         var hasDiff = false
-        var hasAllocatedPoints = false
         rows.forEach { row ->
             val current = workingAlloc[row.def.id] ?: 0
             val original = originalAlloc[row.def.id] ?: 0
             val cap = if (row.def.maxPoints >= 0) row.def.maxPoints else Int.MAX_VALUE
             row.plus?.active = workingUnspent > 0 && current < cap
-            row.minus?.active = current > 0
-            if (current > 0) hasAllocatedPoints = true
+            row.minus?.active = current > original
             if (current != original) hasDiff = true
         }
         applyButton?.active = hasDiff
-        resetButton?.active = hasAllocatedPoints
     }
 
     override fun render(guiGraphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {

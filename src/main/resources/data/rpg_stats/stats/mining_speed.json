@@ -1,11 +1,10 @@
 {
   "name_key": "stat.rpg_stats.mining_speed",
   "color": "#D29A48",
-  "max_points": 50,
   "effects": [
     {
       "type": "attribute",
-      "attribute": "attributeslib:mining_speed",
+      "attribute": "rpg_stats:mining_speed",
       "operation": "multiply_base",
       "curve": {
         "type": "linear",

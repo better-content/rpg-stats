@@ -24,6 +24,10 @@ object ModAttributes {
         RangedAttribute("attribute.name.rpg_stats.thirst_efficiency", 1.0, 1.0, 1024.0).setSyncable(true)
     }
 
+    val MINING_SPEED: RegistryObject<Attribute> = ATTRIBUTES.register("mining_speed") {
+        RangedAttribute("attribute.name.rpg_stats.mining_speed", 1.0, 1.0, 1024.0).setSyncable(true)
+    }
+
     fun register(bus: IEventBus) {
         ATTRIBUTES.register(bus)
     }
@@ -35,5 +39,6 @@ object PlayerAttributeRegistration {
     fun onEntityAttributeModification(event: EntityAttributeModificationEvent) {
         event.add(EntityType.PLAYER, ModAttributes.HUNGER_EFFICIENCY.get())
         event.add(EntityType.PLAYER, ModAttributes.THIRST_EFFICIENCY.get())
+        event.add(EntityType.PLAYER, ModAttributes.MINING_SPEED.get())
     }
 }

@@ -1,7 +1,6 @@
 {
   "name_key": "stat.rpg_stats.hunger_efficiency",
   "color": "#B8A348",
-  "max_points": 50,
   "effects": [
     {
       "type": "attribute",

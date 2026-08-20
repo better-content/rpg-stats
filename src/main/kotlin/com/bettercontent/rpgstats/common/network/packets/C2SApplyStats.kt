@@ -41,28 +41,27 @@ data class C2SApplyStats(
                 val stats = StatsCap.get(sender) ?: return@enqueueWork
                 val defs = RegistryState.snapshot()
 
-                val currentTotal = stats.totalPointsThisLife()
-
-                // Sanitize + cap by definition maxPoints
-                val sanitized = mutableMapOf<String, Int>()
+                val requestedKnown = mutableMapOf<String, Int>()
                 for ((idStr, ptsRaw) in msg.requested) {
                     val id = ResourceLocation.tryParse(idStr) ?: continue
-                    val def = defs[id] ?: continue
-                    val cap = if (def.maxPoints >= 0) def.maxPoints else Int.MAX_VALUE
-                    val pts = ptsRaw.coerceIn(0, cap)
-                    if (pts > 0) sanitized[idStr] = pts
+                    if (id !in defs) continue
+                    if (ptsRaw > 0) requestedKnown[id.toString()] = ptsRaw
                 }
 
-                val requestedSum = sanitized.values.sum()
-                if (requestedSum > currentTotal) {
-                    // Reject; keep server-authoritative state.
+                val decision = AllocationPolicy.apply(
+                    current = stats.allocations,
+                    unspentPoints = stats.unspentPoints,
+                    requested = requestedKnown,
+                    maxPointsById = defs.mapKeys { it.key.toString() }.mapValues { it.value.maxPoints }
+                )
+                if (decision == null) {
                     Network.syncTo(sender)
                     return@enqueueWork
                 }
 
                 stats.allocations.clear()
-                stats.allocations.putAll(sanitized)
-                stats.unspentPoints = currentTotal - requestedSum
+                stats.allocations.putAll(decision.allocations)
+                stats.unspentPoints = decision.unspentPoints
 
                 StatAttributeProjector.reapply(sender)
                 Network.syncTo(sender)

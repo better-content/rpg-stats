@@ -1,7 +1,6 @@
 {
   "name_key": "stat.rpg_stats.movement_speed",
   "color": "#E58A3C",
-  "max_points": 50,
   "effects": [
     {
       "type": "attribute",
