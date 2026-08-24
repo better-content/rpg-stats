@@ -13,9 +13,10 @@ class EfficiencyScalingTest {
     }
 
     @Test
-    fun `fifty points at four percent reaches three hundred percent efficiency`() {
-        val efficiency = 1.0 + 50 * 0.04
-        assertEquals(3.0, efficiency, 0.0001)
-        assertEquals(1.0f, EfficiencyScaling.scale(3.0f, efficiency), 0.0001f)
+    fun `half cap Endurance yields one hundred fifty percent efficiency`() {
+        val bonusAtTwentyPoints = 20.0 / (20.0 + 20.0)
+        val efficiency = 1.0 + bonusAtTwentyPoints
+        assertEquals(1.5, efficiency, 0.0001)
+        assertEquals(2.0f, EfficiencyScaling.scale(3.0f, efficiency), 0.0001f)
     }
 }

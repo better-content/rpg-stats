@@ -54,9 +54,7 @@ object CommonForgeEvents {
         if (event.isWasDeath) {
             newP.getCapability(StatsCap.CAP).ifPresent { newStats ->
                 // Wipe, but baseline peak to current XP level to avoid instant refunds on keep-XP rules.
-                newStats.lifePeakLevel = (newP as? ServerPlayer)?.experienceLevel ?: 0
-                newStats.unspentPoints = 0
-                newStats.allocations.clear()
+                newStats.resetForDeath((newP as? ServerPlayer)?.experienceLevel ?: 0)
             }
         } else {
             oldP.getCapability(StatsCap.CAP).ifPresent { oldStats ->
@@ -96,7 +94,7 @@ object CommonForgeEvents {
             }
 
             // Send defs first, then stats snapshot
-            Network.sendTo(p, S2CStatDefsSync.fromDefs(RegistryState.snapshot().values.toList()))
+            Network.sendTo(p, S2CStatDefsSync.fromDefs(RegistryState.activeSnapshot().values.toList()))
             StatAttributeProjector.reapply(p)
             Network.syncTo(p)
         }

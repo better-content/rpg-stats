@@ -1,0 +1,23 @@
+{
+  "name_key": "stat.rpg_stats.tempo",
+  "order": 20,
+  "icon": "»",
+  "color": "#F28E2B",
+  "effects": [
+    {
+      "type": "attribute",
+      "attribute": "minecraft:generic.attack_speed",
+      "operation": "add",
+      "curve": { "type": "hyperbola", "cap": 0.8, "k": 20.0, "min": 0.0, "max": 0.8 },
+      "is_primary": true
+    },
+    {
+      "type": "attribute",
+      "attribute": "tconstruct:player.use_item_speed",
+      "operation": "multiply_base",
+      "curve": { "type": "hyperbola", "cap": 0.3, "k": 20.0, "min": 0.0, "max": 0.3 },
+      "is_primary": false,
+      "requires_mod": "tconstruct"
+    }
+  ]
+}

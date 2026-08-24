@@ -13,92 +13,118 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class RpgStatsResourceTest {
-    private val expectedStats = setOf(
-        "attack_damage",
-        "attack_speed",
-        "hunger_efficiency",
-        "mining_speed",
-        "movement_speed",
-        "temperature_resistance",
-        "thirst_efficiency"
+    private data class AspectContract(val order: Int, val color: String, val icon: String)
+    private data class EffectContract(
+        val cap: Double,
+        val operation: String,
+        val requiredMod: String? = null,
+        val displayAsPercent: Boolean = operation != "add"
+    )
+
+    private val aspects = linkedMapOf(
+        "impact" to AspectContract(10, "#D94B4B", "✦"),
+        "tempo" to AspectContract(20, "#F28E2B", "»"),
+        "work" to AspectContract(30, "#C5A529", "⚒"),
+        "mobility" to AspectContract(40, "#62A744", "➜"),
+        "endurance" to AspectContract(50, "#168F96", "∞"),
+        "robustness" to AspectContract(60, "#496CC3", "◆"),
+        "control" to AspectContract(70, "#9B58B5", "⊕")
+    )
+
+    private val effects = mapOf(
+        "impact" to mapOf(
+            "minecraft:generic.attack_damage" to EffectContract(8.0, "add"),
+            "epicfight:impact" to EffectContract(1.0, "add", "epicfight")
+        ),
+        "tempo" to mapOf(
+            "minecraft:generic.attack_speed" to EffectContract(0.8, "add"),
+            "tconstruct:player.use_item_speed" to EffectContract(0.3, "multiply_base", "tconstruct")
+        ),
+        "work" to mapOf(
+            "rpg_stats:mining_speed" to EffectContract(1.0, "multiply_base")
+        ),
+        "mobility" to mapOf(
+            "minecraft:generic.movement_speed" to EffectContract(0.06, "add")
+        ),
+        "endurance" to mapOf(
+            "rpg_stats:hunger_efficiency" to EffectContract(1.0, "multiply_base"),
+            "rpg_stats:thirst_efficiency" to EffectContract(1.0, "multiply_base"),
+            "epicfight:staminar" to EffectContract(0.4, "multiply_base", "epicfight")
+        ),
+        "robustness" to mapOf(
+            "cold_sweat:heat_resistance" to EffectContract(0.75, "add", "cold_sweat", true),
+            "cold_sweat:cold_resistance" to EffectContract(0.75, "add", "cold_sweat", true)
+        ),
+        "control" to mapOf(
+            "rpg_stats:recoil_reduction" to EffectContract(0.4, "add", "tacz", true),
+            "rpg_stats:dispersion_reduction" to EffectContract(0.4, "add", "tacz", true),
+            "goety:spell_range" to EffectContract(0.3, "multiply_base", "goety")
+        )
     )
 
     @Test
-    fun `stat resources have matching names and valid attribute effects when present`() {
-        val statsDir = Path.of("src/main/resources/data/rpg_stats/stats")
-        val statFiles = Files.list(statsDir).use { paths ->
-            paths.filter { it.name.endsWith(".json") }.sorted().toList()
-        }
+    fun `bundled rows are exactly the seven ordered Life aspects`() {
+        val files = statFiles()
+        assertEquals(aspects.keys, files.map { it.name.removeSuffix(".json") }.toSet())
 
-        assertEquals(expectedStats, statFiles.map { it.name.removeSuffix(".json") }.toSet())
-
-        statFiles.forEach { path ->
-            val id = path.fileName.toString().removeSuffix(".json")
-            val json = Files.newBufferedReader(path).use { JsonParser.parseReader(it).asJsonObject }
+        files.forEach { path ->
+            val id = path.name.removeSuffix(".json")
+            val expected = aspects.getValue(id)
+            val json = readJson(path)
 
             assertEquals("stat.rpg_stats.$id", json.string("name_key"))
-            assertTrue(json.string("color").matches(Regex("#[0-9A-Fa-f]{6}")), "invalid color in $path")
-            assertFalse(json.has("max_points"), "bundled stats must remain uncapped in $path")
+            assertEquals(expected.order, json.int("order"))
+            assertEquals(expected.color, json.string("color"))
+            assertEquals(expected.icon, json.string("icon"))
+            assertFalse(json.has("max_points"), "Life development remains uncapped in $path")
+            assertTrue(json.getAsJsonArray("effects").size() > 0, "dead aspect definition in $path")
+        }
+    }
 
-            val effects = json.getAsJsonArray("effects")
-            assertFalse(effects.isEmpty, "dead stat definition in $path")
-            effects.forEach { element ->
-                val effect = element.asJsonObject
-                assertEquals("attribute", effect.string("type"), "unsupported effect type in $path")
-                assertTrue(effect.string("attribute").contains(":"), "attribute must be namespaced in $path")
-                assertTrue(effect.string("operation") in setOf("add", "multiply_base", "multiply_total"))
-                val attribute = effect.string("attribute")
-                assertFalse(attribute.contains("max_health"), "health scaling is forbidden in $path")
-                assertFalse(attribute.contains("regeneration"), "regeneration scaling is forbidden in $path")
-                assertFalse(attribute.contains("healing_received"), "healing scaling is forbidden in $path")
-                validateCurve(effect.getAsJsonObject("curve"), path)
+    @Test
+    fun `every projection uses the approved cap over points plus twenty curve`() {
+        aspects.keys.forEach { id ->
+            val actual = statJson(id).getAsJsonArray("effects")
+                .associate { element -> element.asJsonObject.string("attribute") to element.asJsonObject }
+            val expected = effects.getValue(id)
+
+            assertEquals(expected.keys, actual.keys, "unexpected concrete projection for $id")
+            actual.forEach { (attribute, effect) ->
+                val contract = expected.getValue(attribute)
+                assertEquals("attribute", effect.string("type"))
+                assertEquals(contract.operation, effect.string("operation"))
+                assertEquals(contract.requiredMod, effect.optionalString("requires_mod"))
+                val displayAsPercent = effect.get("display_as_percent")?.asBoolean
+                    ?: (contract.operation != "add")
+                assertEquals(contract.displayAsPercent, displayAsPercent)
+
+                val curve = effect.getAsJsonObject("curve")
+                assertEquals("hyperbola", curve.string("type"))
+                assertEquals(contract.cap, curve.double("cap"), 0.000001)
+                assertEquals(20.0, curve.double("k"), 0.000001)
+                assertEquals(0.0, curve.double("min"), 0.000001)
+                assertEquals(contract.cap, curve.double("max"), 0.000001)
             }
         }
     }
 
     @Test
-    fun `efficiency stats grant four percent per point`() {
-        listOf("hunger_efficiency", "thirst_efficiency").forEach { id ->
-            val path = Path.of("src/main/resources/data/rpg_stats/stats/$id.json")
-            val json = Files.newBufferedReader(path).use { JsonParser.parseReader(it).asJsonObject }
-            val effect = json.getAsJsonArray("effects").single().asJsonObject
-            assertEquals("rpg_stats:$id", effect.string("attribute"))
-            assertEquals("multiply_base", effect.string("operation"))
-            assertEquals(0.04, effect.getAsJsonObject("curve").double("per_point"), 0.000001)
-        }
-    }
-
-    @Test
-    fun `mining speed uses the native synchronized multiplier`() {
-        val json = statJson("mining_speed")
-        val effect = json.getAsJsonArray("effects").single().asJsonObject
-
-        assertEquals("rpg_stats:mining_speed", effect.string("attribute"))
-        assertEquals("multiply_base", effect.string("operation"))
-        assertEquals(0.045, effect.getAsJsonObject("curve").double("per_point"), 0.000001)
-    }
-
-    @Test
-    fun `temperature resistance is symmetric and strongly diminishing`() {
-        val effects = statJson("temperature_resistance").getAsJsonArray("effects").map { it.asJsonObject }
-
-        assertEquals(setOf("cold_sweat:heat_resistance", "cold_sweat:cold_resistance"),
-            effects.map { it.string("attribute") }.toSet())
-        effects.forEach { effect ->
-            val curve = effect.getAsJsonObject("curve")
-            assertEquals("hyperbola", curve.string("type"))
-            assertEquals(1.0, curve.double("cap"), 0.000001)
-            assertEquals(10.0, curve.double("k"), 0.000001)
-            assertEquals(0.0, curve.double("min"), 0.000001)
-            assertEquals(1.0, curve.double("max"), 0.000001)
+    fun `Life development has no permanent survivability or renewal projection`() {
+        assertFalse("renewal" in aspects)
+        val forbidden = listOf(
+            "max_health", "armor", "toughness", "damage_reduction", "knockback",
+            "stun_armor", "execution_resistance", "healing", "regeneration", "revive"
+        )
+        effects.values.flatMap { it.keys }.forEach { attribute ->
+            forbidden.forEach { term ->
+                assertFalse(term in attribute, "$attribute violates permanent-Life projection policy")
+            }
         }
     }
 
     @Test
     fun `still beating heart has a visible double pulse animation`() {
-        val texturePath = Path.of(
-            "src/main/resources/assets/rpg_stats/textures/item/still_beating_heart.png"
-        )
+        val texturePath = Path.of("src/main/resources/assets/rpg_stats/textures/item/still_beating_heart.png")
         val metadataPath = texturePath.resolveSibling("still_beating_heart.png.mcmeta")
         val image = assertNotNull(ImageIO.read(texturePath.toFile()), "heart texture must be a readable PNG")
 
@@ -113,10 +139,7 @@ class RpgStatsResourceTest {
         }
         assertEquals(frameCount, framePixels.distinct().size, "every heartbeat frame must be visually distinct")
 
-        val metadata = Files.newBufferedReader(metadataPath).use {
-            JsonParser.parseReader(it).asJsonObject
-        }
-        val animation = metadata.getAsJsonObject("animation")
+        val animation = readJson(metadataPath).getAsJsonObject("animation")
         assertEquals(image.width, animation.int("width"))
         assertEquals(frameHeight, animation.int("height"))
         assertFalse(animation.get("interpolate").asBoolean, "direct frames keep the pulse visible at GUI scale")
@@ -132,20 +155,19 @@ class RpgStatsResourceTest {
         assertEquals(0, scheduledFrames.last().int("index"))
     }
 
-    private fun validateCurve(curve: JsonObject, path: Path) {
-        val type = curve.string("type")
-        assertTrue(type in setOf("linear", "hyperbola", "exp", "exponential"), "unsupported curve in $path")
-        if (type == "linear") {
-            assertTrue(curve.double("per_point") > 0.0, "linear curve needs positive per_point in $path")
+    private fun statFiles(): List<Path> =
+        Files.list(Path.of("src/main/resources/data/rpg_stats/stats")).use { paths ->
+            paths.filter { it.name.endsWith(".json") }.sorted().toList()
         }
-    }
 
     private fun statJson(id: String): JsonObject =
-        Files.newBufferedReader(Path.of("src/main/resources/data/rpg_stats/stats/$id.json")).use {
-            JsonParser.parseReader(it).asJsonObject
-        }
+        readJson(Path.of("src/main/resources/data/rpg_stats/stats/$id.json"))
+
+    private fun readJson(path: Path): JsonObject =
+        Files.newBufferedReader(path).use { JsonParser.parseReader(it).asJsonObject }
 
     private fun JsonObject.string(name: String): String = get(name).asString
+    private fun JsonObject.optionalString(name: String): String? = get(name)?.asString
     private fun JsonObject.int(name: String): Int = get(name).asInt
     private fun JsonObject.double(name: String): Double = get(name).asDouble
 }

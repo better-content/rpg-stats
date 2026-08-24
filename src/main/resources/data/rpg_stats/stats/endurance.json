@@ -1,0 +1,30 @@
+{
+  "name_key": "stat.rpg_stats.endurance",
+  "order": 50,
+  "icon": "∞",
+  "color": "#168F96",
+  "effects": [
+    {
+      "type": "attribute",
+      "attribute": "rpg_stats:hunger_efficiency",
+      "operation": "multiply_base",
+      "curve": { "type": "hyperbola", "cap": 1.0, "k": 20.0, "min": 0.0, "max": 1.0 },
+      "is_primary": true
+    },
+    {
+      "type": "attribute",
+      "attribute": "rpg_stats:thirst_efficiency",
+      "operation": "multiply_base",
+      "curve": { "type": "hyperbola", "cap": 1.0, "k": 20.0, "min": 0.0, "max": 1.0 },
+      "is_primary": false
+    },
+    {
+      "type": "attribute",
+      "attribute": "epicfight:staminar",
+      "operation": "multiply_base",
+      "curve": { "type": "hyperbola", "cap": 0.4, "k": 20.0, "min": 0.0, "max": 0.4 },
+      "is_primary": false,
+      "requires_mod": "epicfight"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name_key": "stat.rpg_stats.mobility",
+  "order": 40,
+  "icon": "➜",
+  "color": "#62A744",
+  "effects": [
+    {
+      "type": "attribute",
+      "attribute": "minecraft:generic.movement_speed",
+      "operation": "add",
+      "curve": { "type": "hyperbola", "cap": 0.06, "k": 20.0, "min": 0.0, "max": 0.06 },
+      "is_primary": true
+    }
+  ]
+}

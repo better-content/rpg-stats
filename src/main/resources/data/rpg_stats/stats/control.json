@@ -1,0 +1,34 @@
+{
+  "name_key": "stat.rpg_stats.control",
+  "order": 70,
+  "icon": "⊕",
+  "color": "#9B58B5",
+  "effects": [
+    {
+      "type": "attribute",
+      "attribute": "rpg_stats:recoil_reduction",
+      "operation": "add",
+      "curve": { "type": "hyperbola", "cap": 0.4, "k": 20.0, "min": 0.0, "max": 0.4 },
+      "is_primary": true,
+      "display_as_percent": true,
+      "requires_mod": "tacz"
+    },
+    {
+      "type": "attribute",
+      "attribute": "rpg_stats:dispersion_reduction",
+      "operation": "add",
+      "curve": { "type": "hyperbola", "cap": 0.4, "k": 20.0, "min": 0.0, "max": 0.4 },
+      "is_primary": false,
+      "display_as_percent": true,
+      "requires_mod": "tacz"
+    },
+    {
+      "type": "attribute",
+      "attribute": "goety:spell_range",
+      "operation": "multiply_base",
+      "curve": { "type": "hyperbola", "cap": 0.3, "k": 20.0, "min": 0.0, "max": 0.3 },
+      "is_primary": false,
+      "requires_mod": "goety"
+    }
+  ]
+}

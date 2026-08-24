@@ -18,13 +18,14 @@ object StatAttributeProjector {
      */
     fun reapply(player: ServerPlayer) {
         val stats = StatsCap.get(player) ?: return
-        val defs = RegistryState.snapshot()
+        val defs = RegistryState.activeSnapshot()
 
         // 1) Remove everything we own.
         for (def in defs.values) {
             val statIdStr = def.id.toString()
             for (effect in def.effects) {
                 if (effect is AttributeEffect) {
+                    if (!EffectAvailability.isAvailable(effect)) continue
                     val attr = ForgeRegistries.ATTRIBUTES.getValue(effect.attributeId) ?: continue
                     val inst: AttributeInstance = player.getAttribute(attr) ?: continue
                     val uuid = ModifierUuids.uuidFor(statIdStr, effect.attributeId.toString())
@@ -41,6 +42,7 @@ object StatAttributeProjector {
 
             for (effect in def.effects) {
                 if (effect is AttributeEffect) {
+                    if (!EffectAvailability.isAvailable(effect)) continue
                     val attr = ForgeRegistries.ATTRIBUTES.getValue(effect.attributeId) ?: continue
                     val inst: AttributeInstance = player.getAttribute(attr) ?: continue
 

@@ -7,7 +7,11 @@
   "mixins": [
     "FoodDataMixin",
     "PlayerMixin",
+    "TaczDispersionMixin",
     "ThirstPlayerMixin"
+  ],
+  "client": [
+    "TaczCameraSetupMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -6,6 +6,7 @@ import com.bettercontent.rpgstats.client.cache.ClientEffectDef
 import com.bettercontent.rpgstats.client.cache.ClientStatDef
 import com.bettercontent.rpgstats.common.config.json.AttributeEffect
 import com.bettercontent.rpgstats.common.config.json.StatDefinition
+import com.bettercontent.rpgstats.common.attribute.EffectAvailability
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraftforge.api.distmarker.Dist
 import net.minecraftforge.fml.DistExecutor
@@ -30,7 +31,7 @@ data class S2CStatDefsSync(
         fun fromDefs(defs: List<StatDefinition>): S2CStatDefsSync {
             val list = defs.map { d ->
                 val effs = d.effects.mapNotNull { e ->
-                    if (e is AttributeEffect) {
+                    if (e is AttributeEffect && EffectAvailability.isAvailable(e)) {
                         ClientEffectDef(
                             attributeId = e.attributeId.toString(),
                             operation = e.operation.ordinal,
@@ -42,7 +43,8 @@ data class S2CStatDefsSync(
                                 min = e.curve.min,
                                 max = e.curve.max
                             ),
-                            isPrimary = e.isPrimary
+                            isPrimary = e.isPrimary,
+                            displayAsPercent = e.displayAsPercent
                         )
                     } else null
                 }
@@ -71,6 +73,7 @@ data class S2CStatDefsSync(
                     buf.writeUtf(e.attributeId)
                     buf.writeVarInt(e.operation)
                     buf.writeBoolean(e.isPrimary)
+                    buf.writeBoolean(e.displayAsPercent)
                     buf.writeUtf(e.curve.type)
                     buf.writeDouble(e.curve.cap)
                     buf.writeDouble(e.curve.k)
@@ -96,13 +99,20 @@ data class S2CStatDefsSync(
                     val attr = buf.readUtf(32767)
                     val op = buf.readVarInt()
                     val isPrimary = buf.readBoolean()
+                    val displayAsPercent = buf.readBoolean()
                     val t = buf.readUtf(32767)
                     val cap = buf.readDouble()
                     val k = buf.readDouble()
                     val per = buf.readDouble()
                     val min = buf.readDouble()
                     val max = buf.readDouble()
-                    effs += ClientEffectDef(attr, op, ClientCurveDef(t, cap, k, per, min, max), isPrimary)
+                    effs += ClientEffectDef(
+                        attr,
+                        op,
+                        ClientCurveDef(t, cap, k, per, min, max),
+                        isPrimary,
+                        displayAsPercent
+                    )
                 }
                 list += ClientStatDef(id, nameKey, maxPoints, effs, icon, color)
             }

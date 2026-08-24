@@ -9,5 +9,7 @@ data class AttributeEffect(
     val attributeId: ResourceLocation,
     val operation: AttributeModifier.Operation,
     val curve: CurveDef,
-    val isPrimary: Boolean = true
+    val isPrimary: Boolean = true,
+    val requiredMod: String? = null,
+    val displayAsPercent: Boolean = operation != AttributeModifier.Operation.ADDITION
 ) : StatEffect

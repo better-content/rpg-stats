@@ -83,29 +83,47 @@ object RpgStatsVisualHarness {
 
     private fun seedFixture() {
         ClientCache.defs = listOf(
-            stat("attack_damage", "⚔", 0xE35B52, effect("minecraft:generic.attack_damage", 0, 0.25)),
-            stat("attack_speed", "⏱", 0xF0A84A, effect("minecraft:generic.attack_speed", 1, 0.025)),
-            stat("mining_speed", "⛏", 0xE2C14F, effect("rpg_stats:mining_speed", 1, 0.045)),
-            stat("movement_speed", "➜", 0x66C56C, effect("minecraft:generic.movement_speed", 1, 0.02)),
             stat(
-                "temperature_resistance",
-                "❄",
-                0x55BCE8,
-                resistanceEffect("cold_sweat:heat_resistance"),
-                resistanceEffect("cold_sweat:cold_resistance", primary = false)
+                "impact", "✦", 0xD94B4B,
+                effect("minecraft:generic.attack_damage", 0, 8.0),
+                effect("epicfight:impact", 0, 1.0, primary = false)
             ),
-            stat("hunger_efficiency", "◆", 0xB779E8, effect("rpg_stats:hunger_efficiency", 1, 0.03)),
-            stat("thirst_efficiency", "●", 0x4E92E8, effect("rpg_stats:thirst_efficiency", 1, 0.03))
+            stat(
+                "tempo", "»", 0xF28E2B,
+                effect("minecraft:generic.attack_speed", 0, 0.8),
+                effect("tconstruct:player.use_item_speed", 1, 0.3, primary = false)
+            ),
+            stat("work", "⚒", 0xC5A529, effect("rpg_stats:mining_speed", 1, 1.0)),
+            stat("mobility", "➜", 0x62A744, effect("minecraft:generic.movement_speed", 0, 0.06)),
+            stat(
+                "endurance", "∞", 0x168F96,
+                effect("rpg_stats:hunger_efficiency", 1, 1.0),
+                effect("rpg_stats:thirst_efficiency", 1, 1.0, primary = false),
+                effect("epicfight:staminar", 1, 0.4, primary = false)
+            ),
+            stat(
+                "robustness", "◆", 0x496CC3,
+                effect("cold_sweat:heat_resistance", 0, 0.75, displayAsPercent = true),
+                effect("cold_sweat:cold_resistance", 0, 0.75, primary = false, displayAsPercent = true)
+            ),
+            stat(
+                "control", "⊕", 0x9B58B5,
+                effect("rpg_stats:recoil_reduction", 0, 0.4, displayAsPercent = true),
+                effect("rpg_stats:dispersion_reduction", 0, 0.4, primary = false, displayAsPercent = true),
+                effect("goety:spell_range", 1, 0.3, primary = false)
+            )
         )
         ClientCache.stats = ClientStatsSnapshot(
             unspent = 4,
             lifePeak = 27,
             allocations = mapOf(
-                "rpg_stats:attack_damage" to 4,
-                "rpg_stats:attack_speed" to 2,
-                "rpg_stats:mining_speed" to 3,
-                "rpg_stats:movement_speed" to 1,
-                "rpg_stats:temperature_resistance" to 2
+                "rpg_stats:impact" to 4,
+                "rpg_stats:tempo" to 2,
+                "rpg_stats:work" to 3,
+                "rpg_stats:mobility" to 1,
+                "rpg_stats:endurance" to 2,
+                "rpg_stats:robustness" to 2,
+                "rpg_stats:control" to 1
             )
         )
     }
@@ -120,33 +138,26 @@ object RpgStatsVisualHarness {
             color = color
         )
 
-    private fun effect(attributeId: String, operation: Int, perPoint: Double, primary: Boolean = true) =
+    private fun effect(
+        attributeId: String,
+        operation: Int,
+        cap: Double,
+        primary: Boolean = true,
+        displayAsPercent: Boolean = operation != 0
+    ) =
         ClientEffectDef(
             attributeId = attributeId,
             operation = operation,
             curve = ClientCurveDef(
-                type = "linear",
-                cap = Double.POSITIVE_INFINITY,
-                k = 0.0,
-                perPoint = perPoint,
-                min = Double.NEGATIVE_INFINITY,
-                max = Double.POSITIVE_INFINITY
-            ),
-            isPrimary = primary
-        )
-
-    private fun resistanceEffect(attributeId: String, primary: Boolean = true) =
-        ClientEffectDef(
-            attributeId = attributeId,
-            operation = 0,
-            curve = ClientCurveDef(
                 type = "hyperbola",
-                cap = 1.0,
-                k = 10.0,
+                cap = cap,
+                k = 20.0,
                 perPoint = 0.0,
                 min = 0.0,
-                max = 1.0
+                max = cap
             ),
-            isPrimary = primary
+            isPrimary = primary,
+            displayAsPercent = displayAsPercent
         )
+
 }

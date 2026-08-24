@@ -69,7 +69,8 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
         val sourceName: String,
         val color: Int,
         val perPoint: Double,
-        val primary: Boolean
+        val primary: Boolean,
+        val displayAsPercent: Boolean
     )
 
     private data class PropertyRow(
@@ -77,6 +78,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
         val sourceName: String,
         val color: Int,
         val operation: Int,
+        val displayAsPercent: Boolean,
         val originalTotal: Double,
         val workingTotal: Double
     )
@@ -252,10 +254,10 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
             } else ""
             guiGraphics.drawString(font, ellipsize(property.friendlyName + sourceSuffix, textWidth),
                 textX, rowY + 4, opaque(property.color), false)
-            val current = formatEffectValue(property.originalTotal, property.operation != 0)
+            val current = formatEffectValue(property.originalTotal, property.displayAsPercent)
             val changed = property.originalTotal != property.workingTotal
             val values = if (changed) {
-                val pending = formatEffectValue(property.workingTotal, property.operation != 0)
+                val pending = formatEffectValue(property.workingTotal, property.displayAsPercent)
                 Component.translatable("screen.rpg_stats.current_pending", current, pending).string
             } else Component.translatable("screen.rpg_stats.current", current).string
             val valueColor = when {
@@ -339,7 +341,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
                 val candidate = PropertyProvider(effect.attributeId, effect.operation,
                     resolveAttributeName(effect.attributeId).string, sourceName,
                     if (effect.isPrimary) row.def.color else lightenColor(row.def.color),
-                    effect.curve.perPoint, effect.isPrimary)
+                    effect.curve.perPoint, effect.isPrimary, effect.displayAsPercent)
                 if (current == null || (candidate.primary && !current.primary) ||
                     (candidate.primary == current.primary && candidate.perPoint > current.perPoint)) {
                     providers[effect.attributeId] = candidate
@@ -358,7 +360,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
                 }
             }
             PropertyRow(provider.friendlyName, provider.sourceName, provider.color,
-                provider.operation, originalTotal, workingTotal)
+                provider.operation, provider.displayAsPercent, originalTotal, workingTotal)
         }
     }
 
@@ -392,7 +394,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
             lines += Component.translatable(role).append(Component.literal(": "))
                 .append(resolveAttributeName(effect.attributeId).copy().withStyle { it.withColor(color) })
                 .append(Component.literal(" ")).append(Component.translatable("tooltip.rpg_stats.now_next",
-                    formatEffectValue(current, effect.operation != 0), formatEffectValue(next, effect.operation != 0)))
+                    formatEffectValue(current, effect.displayAsPercent), formatEffectValue(next, effect.displayAsPercent)))
         }
         return lines
     }
@@ -417,7 +419,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
     private fun formatMarginalGain(effect: ClientEffectDef, currentPoints: Int): String {
         val current = Curves.eval(currentPoints, effect.curve.toCommon())
         val next = Curves.eval(currentPoints + 1, effect.curve.toCommon())
-        return formatEffectValue(next - current, effect.operation != 0)
+        return formatEffectValue(next - current, effect.displayAsPercent)
     }
 
     private fun formatPointCounter(def: ClientStatDef, points: Int): String =
@@ -437,7 +439,9 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
     private fun trimNumber(value: Double): String = when {
         abs(value) >= 100.0 -> String.format("%.0f", value)
         abs(value) >= 10.0 -> String.format("%.1f", value)
-        else -> String.format("%.2f", value)
+        abs(value) >= 1.0 -> String.format("%.2f", value)
+        abs(value) >= 0.01 -> String.format("%.3f", value)
+        else -> String.format("%.4f", value)
     }
 
     private fun ClientCurveDef.toCommon() = CurveDef(type, cap, k, perPoint, min, max)

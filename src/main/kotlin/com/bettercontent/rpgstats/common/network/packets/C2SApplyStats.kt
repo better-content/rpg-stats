@@ -39,7 +39,7 @@ data class C2SApplyStats(
             context.enqueueWork {
                 val sender: ServerPlayer = context.sender ?: return@enqueueWork
                 val stats = StatsCap.get(sender) ?: return@enqueueWork
-                val defs = RegistryState.snapshot()
+                val defs = RegistryState.activeSnapshot()
 
                 val requestedKnown = mutableMapOf<String, Int>()
                 for ((idStr, ptsRaw) in msg.requested) {
