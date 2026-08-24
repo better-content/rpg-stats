@@ -14,10 +14,8 @@
   "screen.rpg_stats.current_pending": "Current %s  ·  Pending %s",
 
   "item.rpg_stats.still_beating_heart": "Still Beating Heart",
-  "item.rpg_stats.still_beating_heart.tooltip.description": "Stores the XP level reached when its owner died",
   "item.rpg_stats.still_beating_heart.tooltip.level": "Stored XP level: %s",
   "item.rpg_stats.still_beating_heart.tooltip.altar_rate": "Blood Altar generation: %s LP/t",
-  "item.rpg_stats.still_beating_heart.tooltip.altar_usage": "Place in a Blood Altar to generate Life Essence",
 
   "stat.rpg_stats.attack_damage": "Attack Damage",
   "stat.rpg_stats.attack_speed": "Attack Speed",

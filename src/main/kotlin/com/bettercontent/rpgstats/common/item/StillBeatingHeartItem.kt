@@ -16,13 +16,11 @@ class StillBeatingHeartItem(properties: Properties) : Item(properties) {
         if (StillBeatingHeartData.getData(stack) == null) return
 
         val level = StillBeatingHeartData.getLevel(stack)
-        tooltip += Component.translatable("item.rpg_stats.still_beating_heart.tooltip.description")
         tooltip += Component.translatable("item.rpg_stats.still_beating_heart.tooltip.level", level)
         tooltip += Component.translatable(
             "item.rpg_stats.still_beating_heart.tooltip.altar_rate",
             StillBeatingHeartData.lpPerTick(level)
         )
-        tooltip += Component.translatable("item.rpg_stats.still_beating_heart.tooltip.altar_usage")
     }
 
 }
