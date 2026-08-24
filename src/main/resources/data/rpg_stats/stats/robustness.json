@@ -2,7 +2,7 @@
   "name_key": "stat.rpg_stats.robustness",
   "order": 60,
   "icon": "◆",
-  "color": "#496CC3",
+  "color": "#1175FC",
   "effects": [
     {
       "type": "attribute",

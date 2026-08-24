@@ -22,13 +22,13 @@ class RpgStatsResourceTest {
     )
 
     private val aspects = linkedMapOf(
-        "impact" to AspectContract(10, "#D94B4B", "✦"),
-        "tempo" to AspectContract(20, "#F28E2B", "»"),
-        "work" to AspectContract(30, "#C5A529", "⚒"),
-        "mobility" to AspectContract(40, "#62A744", "➜"),
-        "endurance" to AspectContract(50, "#168F96", "∞"),
-        "robustness" to AspectContract(60, "#496CC3", "◆"),
-        "control" to AspectContract(70, "#9B58B5", "⊕")
+        "impact" to AspectContract(10, "#E4717D", "✦"),
+        "tempo" to AspectContract(20, "#AA652B", "»"),
+        "work" to AspectContract(30, "#CAA903", "⚒"),
+        "mobility" to AspectContract(40, "#C0E304", "➜"),
+        "endurance" to AspectContract(50, "#35BBD0", "∞"),
+        "robustness" to AspectContract(60, "#1175FC", "◆"),
+        "control" to AspectContract(70, "#8A6CB2", "⊕")
     )
 
     private val effects = mapOf(

@@ -84,30 +84,30 @@ object RpgStatsVisualHarness {
     private fun seedFixture() {
         ClientCache.defs = listOf(
             stat(
-                "impact", "✦", 0xD94B4B,
+                "impact", "✦", 0xE4717D,
                 effect("minecraft:generic.attack_damage", 0, 8.0),
                 effect("epicfight:impact", 0, 1.0, primary = false)
             ),
             stat(
-                "tempo", "»", 0xF28E2B,
+                "tempo", "»", 0xAA652B,
                 effect("minecraft:generic.attack_speed", 0, 0.8),
                 effect("tconstruct:player.use_item_speed", 1, 0.3, primary = false)
             ),
-            stat("work", "⚒", 0xC5A529, effect("rpg_stats:mining_speed", 1, 1.0)),
-            stat("mobility", "➜", 0x62A744, effect("minecraft:generic.movement_speed", 0, 0.06)),
+            stat("work", "⚒", 0xCAA903, effect("rpg_stats:mining_speed", 1, 1.0)),
+            stat("mobility", "➜", 0xC0E304, effect("minecraft:generic.movement_speed", 0, 0.06)),
             stat(
-                "endurance", "∞", 0x168F96,
+                "endurance", "∞", 0x35BBD0,
                 effect("rpg_stats:hunger_efficiency", 1, 1.0),
                 effect("rpg_stats:thirst_efficiency", 1, 1.0, primary = false),
                 effect("epicfight:staminar", 1, 0.4, primary = false)
             ),
             stat(
-                "robustness", "◆", 0x496CC3,
+                "robustness", "◆", 0x1175FC,
                 effect("cold_sweat:heat_resistance", 0, 0.75, displayAsPercent = true),
                 effect("cold_sweat:cold_resistance", 0, 0.75, primary = false, displayAsPercent = true)
             ),
             stat(
-                "control", "⊕", 0x9B58B5,
+                "control", "⊕", 0x8A6CB2,
                 effect("rpg_stats:recoil_reduction", 0, 0.4, displayAsPercent = true),
                 effect("rpg_stats:dispersion_reduction", 0, 0.4, primary = false, displayAsPercent = true),
                 effect("goety:spell_range", 1, 0.3, primary = false)

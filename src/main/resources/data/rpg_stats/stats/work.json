@@ -2,7 +2,7 @@
   "name_key": "stat.rpg_stats.work",
   "order": 30,
   "icon": "⚒",
-  "color": "#C5A529",
+  "color": "#CAA903",
   "effects": [
     {
       "type": "attribute",

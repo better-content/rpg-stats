@@ -2,7 +2,7 @@
   "name_key": "stat.rpg_stats.mobility",
   "order": 40,
   "icon": "➜",
-  "color": "#62A744",
+  "color": "#C0E304",
   "effects": [
     {
       "type": "attribute",

@@ -2,7 +2,7 @@
   "name_key": "stat.rpg_stats.tempo",
   "order": 20,
   "icon": "»",
-  "color": "#F28E2B",
+  "color": "#AA652B",
   "effects": [
     {
       "type": "attribute",

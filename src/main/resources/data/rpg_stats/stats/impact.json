@@ -2,7 +2,7 @@
   "name_key": "stat.rpg_stats.impact",
   "order": 10,
   "icon": "✦",
-  "color": "#D94B4B",
+  "color": "#E4717D",
   "effects": [
     {
       "type": "attribute",
