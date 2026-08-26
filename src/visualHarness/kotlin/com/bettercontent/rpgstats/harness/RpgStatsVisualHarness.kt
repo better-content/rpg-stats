@@ -23,6 +23,8 @@ object RpgStatsVisualHarness {
     private var startupTicks = 0
     private var screenTicks = 0
     private var statsCaptured = false
+    private var soundScreenTicks = 0
+    private var soundCaptured = false
     private var heartScreenTicks = 0
     private var heartCaptures = 0
     private var ticksAfterCapture = 0
@@ -58,6 +60,25 @@ object RpgStatsVisualHarness {
                     println("RPG_STATS_VISUAL_HARNESS stats-screenshot $message")
                 }
                 statsCaptured = true
+                minecraft.setScreen(IdentitySoundReviewScreen())
+                println("RPG_STATS_VISUAL_HARNESS sound-review-ready")
+            }
+            return
+        }
+
+        if (!soundCaptured && minecraft.screen is IdentitySoundReviewScreen) {
+            soundScreenTicks++
+            if (soundScreenTicks % 12 == 1) {
+                val index = soundScreenTicks / 12
+                com.bettercontent.rpgstats.common.salience.AspectIdentity.entries.getOrNull(index)?.let {
+                    (minecraft.screen as IdentitySoundReviewScreen).play(it)
+                }
+            }
+            if (soundScreenTicks >= 100) {
+                Screenshot.grab(minecraft.gameDirectory, minecraft.mainRenderTarget) { message ->
+                    println("RPG_STATS_VISUAL_HARNESS sound-review-screenshot $message")
+                }
+                soundCaptured = true
                 minecraft.setScreen(StillBeatingHeartAnimationScreen())
                 println("RPG_STATS_VISUAL_HARNESS heart-screen-ready")
             }
