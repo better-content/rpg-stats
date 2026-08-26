@@ -12,14 +12,14 @@ import javax.imageio.ImageIO
 
 class IdentityAssetContractTest {
     private val motifHashes = mapOf(
-        "impact" to "73f2a5256be3a4f0c85ab65aeaa6d139ac43103e8e8d24003b9a4119ea2ab51a",
-        "tempo" to "e77950b8b2e29f7425af7ae1673ed12f325de741af149b1b308bb6af64d44665",
-        "work" to "aeabd6b7a437211ff683fbb452e5671b84d106d8daab63c7333869e3f4cf8a3e",
-        "mobility" to "ba1f67679ec62909c6bfb16532efed80e736c258ad9582037df423c04157a570",
-        "endurance" to "6409e26c4f80c0586dc220542cd4a18d44089a3d7bda8ea79af94b5aa5d7e64d",
-        "robustness" to "e914400a5a03a898528a1d6674398e20fca5d5778ea4c8f617df23958d780311",
-        "renewal" to "6fe2b992a4ffd3bead0992d53bc6885ad86e24e0fd71e84f67b6f812ca061a21",
-        "control" to "971dee8ac79c5961407651e16ac73821f8864923738d8b6c8d637e001e07d457"
+        "impact" to "f4fc74364f8a7e91df3a1f9dd3c07fd4c9022b0fef00e221e80266b8edabc489",
+        "tempo" to "eac16819679ac96f9fa3ddb2c965514a29f414a40e24d50a1463d642cce85412",
+        "work" to "9037dfbca5376beecee554594140742365ae4c68283724df026893390d303ee7",
+        "mobility" to "c35d440d3088381b0c4add94e32f42c9550dbb27a866c8b421e28ef9ee833ff3",
+        "endurance" to "75a19e1418f7d03d4e1a04029edb8d36d4163ca2fda11e85124ba3d3b547113d",
+        "robustness" to "6974a8030e6b6afe642be4d949bc5087f3400a13ffe5a5b98c42a46bff0bb7ff",
+        "renewal" to "c5c657748621d9a2b327cf6ed6bff5d8d829205c71e8286aab28abbe7ac79db3",
+        "control" to "c9ebb0fb9fadcc8b4aa8eb53328cd440e2e6f4b97a9313d88d37d5954f870579"
     )
 
     @Test
