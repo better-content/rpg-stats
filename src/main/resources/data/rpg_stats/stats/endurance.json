@@ -1,5 +1,5 @@
 {
-  "name_key": "stat.rpg_stats.endurance",
+  "name_key": "stat.rpg_stats.constitution",
   "order": 50,
   "icon": "∞",
   "color": "#35BBD0",
@@ -22,7 +22,7 @@
       "type": "attribute",
       "attribute": "epicfight:staminar",
       "operation": "multiply_base",
-      "curve": { "type": "hyperbola", "cap": 0.4, "k": 20.0, "min": 0.0, "max": 0.4 },
+      "curve": { "type": "hyperbola", "cap": 0.3, "k": 20.0, "min": 0.0, "max": 0.3 },
       "is_primary": false,
       "requires_mod": "epicfight"
     }

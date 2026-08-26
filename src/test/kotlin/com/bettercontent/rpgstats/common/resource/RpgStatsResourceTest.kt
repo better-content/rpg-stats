@@ -13,7 +13,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class RpgStatsResourceTest {
-    private data class AspectContract(val order: Int, val color: String, val icon: String)
+    private data class AspectContract(val order: Int, val color: String, val icon: String, val visibleName: String)
     private data class EffectContract(
         val cap: Double,
         val operation: String,
@@ -22,48 +22,58 @@ class RpgStatsResourceTest {
     )
 
     private val aspects = linkedMapOf(
-        "impact" to AspectContract(10, "#E4717D", "✦"),
-        "tempo" to AspectContract(20, "#AA652B", "»"),
-        "work" to AspectContract(30, "#CAA903", "⚒"),
-        "mobility" to AspectContract(40, "#C0E304", "➜"),
-        "endurance" to AspectContract(50, "#35BBD0", "∞"),
-        "robustness" to AspectContract(60, "#1175FC", "◆"),
-        "control" to AspectContract(70, "#8A6CB2", "⊕")
+        "impact" to AspectContract(10, "#E4717D", "✦", "strength"),
+        "tempo" to AspectContract(20, "#AA652B", "»", "dexterity"),
+        "work" to AspectContract(30, "#CAA903", "⚒", "aptitude"),
+        "mobility" to AspectContract(40, "#C0E304", "➜", "agility"),
+        "endurance" to AspectContract(50, "#35BBD0", "∞", "constitution"),
+        "robustness" to AspectContract(60, "#1175FC", "◆", "fortitude"),
+        "renewal" to AspectContract(70, "#6FEDBA", "✚", "vitality"),
+        "control" to AspectContract(80, "#8A6CB2", "⊕", "perception")
     )
 
     private val effects = mapOf(
         "impact" to mapOf(
-            "minecraft:generic.attack_damage" to EffectContract(8.0, "add"),
-            "epicfight:impact" to EffectContract(1.0, "add", "epicfight")
+            "minecraft:generic.attack_damage" to EffectContract(6.0, "add"),
+            "epicfight:impact" to EffectContract(0.75, "add", "epicfight"),
+            "minecraft:generic.attack_knockback" to EffectContract(0.4, "add")
         ),
         "tempo" to mapOf(
-            "minecraft:generic.attack_speed" to EffectContract(0.8, "add"),
-            "tconstruct:player.use_item_speed" to EffectContract(0.3, "multiply_base", "tconstruct")
+            "minecraft:generic.attack_speed" to EffectContract(0.6, "add"),
+            "tconstruct:player.use_item_speed" to EffectContract(0.25, "multiply_base", "tconstruct")
         ),
         "work" to mapOf(
-            "rpg_stats:mining_speed" to EffectContract(1.0, "multiply_base")
+            "rpg_stats:mining_speed" to EffectContract(0.75, "multiply_base"),
+            "forge:block_reach" to EffectContract(1.0, "add")
         ),
         "mobility" to mapOf(
-            "minecraft:generic.movement_speed" to EffectContract(0.06, "add")
+            "minecraft:generic.movement_speed" to EffectContract(0.05, "add"),
+            "forge:swim_speed" to EffectContract(0.25, "multiply_base"),
+            "forge:step_height_addition" to EffectContract(0.5, "add")
         ),
         "endurance" to mapOf(
             "rpg_stats:hunger_efficiency" to EffectContract(1.0, "multiply_base"),
             "rpg_stats:thirst_efficiency" to EffectContract(1.0, "multiply_base"),
-            "epicfight:staminar" to EffectContract(0.4, "multiply_base", "epicfight")
+            "epicfight:staminar" to EffectContract(0.3, "multiply_base", "epicfight")
         ),
         "robustness" to mapOf(
-            "cold_sweat:heat_resistance" to EffectContract(0.75, "add", "cold_sweat", true),
-            "cold_sweat:cold_resistance" to EffectContract(0.75, "add", "cold_sweat", true)
+            "cold_sweat:heat_resistance" to EffectContract(0.6, "add", "cold_sweat", true),
+            "cold_sweat:cold_resistance" to EffectContract(0.6, "add", "cold_sweat", true),
+            "minecraft:generic.knockback_resistance" to EffectContract(0.15, "add")
+        ),
+        "renewal" to mapOf(
+            "rpg_stats:harmful_effect_duration_reduction" to EffectContract(0.25, "add", displayAsPercent = true),
+            "rpg_stats:beneficial_effect_duration" to EffectContract(0.25, "add", displayAsPercent = true)
         ),
         "control" to mapOf(
-            "rpg_stats:recoil_reduction" to EffectContract(0.4, "add", "tacz", true),
-            "rpg_stats:dispersion_reduction" to EffectContract(0.4, "add", "tacz", true),
-            "goety:spell_range" to EffectContract(0.3, "multiply_base", "goety")
+            "rpg_stats:recoil_reduction" to EffectContract(0.35, "add", "tacz", true),
+            "rpg_stats:dispersion_reduction" to EffectContract(0.35, "add", "tacz", true),
+            "goety:spell_range" to EffectContract(0.25, "multiply_base", "goety")
         )
     )
 
     @Test
-    fun `bundled rows are exactly the seven ordered Life aspects`() {
+    fun `bundled rows are exactly the eight categorical Life identities`() {
         val files = statFiles()
         assertEquals(aspects.keys, files.map { it.name.removeSuffix(".json") }.toSet())
 
@@ -72,7 +82,7 @@ class RpgStatsResourceTest {
             val expected = aspects.getValue(id)
             val json = readJson(path)
 
-            assertEquals("stat.rpg_stats.$id", json.string("name_key"))
+            assertEquals("stat.rpg_stats.${expected.visibleName}", json.string("name_key"))
             assertEquals(expected.order, json.int("order"))
             assertEquals(expected.color, json.string("color"))
             assertEquals(expected.icon, json.string("icon"))
@@ -109,10 +119,9 @@ class RpgStatsResourceTest {
     }
 
     @Test
-    fun `Life development has no permanent survivability or renewal projection`() {
-        assertFalse("renewal" in aspects)
+    fun `Life development leaves health and combat recovery to their owning systems`() {
         val forbidden = listOf(
-            "max_health", "armor", "toughness", "damage_reduction", "knockback",
+            "max_health", "armor", "toughness", "damage_reduction",
             "stun_armor", "execution_resistance", "healing", "regeneration", "revive"
         )
         effects.values.flatMap { it.keys }.forEach { attribute ->

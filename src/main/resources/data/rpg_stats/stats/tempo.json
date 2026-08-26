@@ -1,5 +1,5 @@
 {
-  "name_key": "stat.rpg_stats.tempo",
+  "name_key": "stat.rpg_stats.dexterity",
   "order": 20,
   "icon": "»",
   "color": "#AA652B",
@@ -8,14 +8,14 @@
       "type": "attribute",
       "attribute": "minecraft:generic.attack_speed",
       "operation": "add",
-      "curve": { "type": "hyperbola", "cap": 0.8, "k": 20.0, "min": 0.0, "max": 0.8 },
+      "curve": { "type": "hyperbola", "cap": 0.6, "k": 20.0, "min": 0.0, "max": 0.6 },
       "is_primary": true
     },
     {
       "type": "attribute",
       "attribute": "tconstruct:player.use_item_speed",
       "operation": "multiply_base",
-      "curve": { "type": "hyperbola", "cap": 0.3, "k": 20.0, "min": 0.0, "max": 0.3 },
+      "curve": { "type": "hyperbola", "cap": 0.25, "k": 20.0, "min": 0.0, "max": 0.25 },
       "is_primary": false,
       "requires_mod": "tconstruct"
     }

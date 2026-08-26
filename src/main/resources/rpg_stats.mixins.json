@@ -6,6 +6,7 @@
   "refmap": "rpg_stats.refmap.json",
   "mixins": [
     "FoodDataMixin",
+    "LivingEntityEffectMixin",
     "PlayerMixin",
     "TaczDispersionMixin",
     "ThirstPlayerMixin"

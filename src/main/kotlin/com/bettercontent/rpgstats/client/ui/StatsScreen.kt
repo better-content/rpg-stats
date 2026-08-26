@@ -383,6 +383,8 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
         if (def.effects.isEmpty()) return listOf(Component.translatable("tooltip.rpg_stats.no_effects"))
         val currentPoints = workingAlloc[def.id] ?: 0
         val lines = mutableListOf(
+            Component.translatable("tooltip.rpg_stats.aspect", Component.translatable("aspect.rpg_stats.${def.id.substringAfter(':')}"))
+                .withStyle { it.withColor(def.color) },
             Component.translatable("tooltip.rpg_stats.points_header", formatPointCounter(def, currentPoints)),
             Component.translatable("tooltip.rpg_stats.effects_header")
         )
