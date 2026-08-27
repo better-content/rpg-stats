@@ -13,6 +13,12 @@ class PlayerStats {
 
     fun totalPointsThisLife(): Int = unspentPoints + totalAllocated()
 
+    fun resetForDeath(currentLevel: Int) {
+        lifePeakLevel = currentLevel.coerceAtLeast(0)
+        unspentPoints = 0
+        allocations.clear()
+    }
+
     fun serializeNBT(): CompoundTag {
         val tag = CompoundTag()
         tag.putInt("lifePeakLevel", lifePeakLevel)

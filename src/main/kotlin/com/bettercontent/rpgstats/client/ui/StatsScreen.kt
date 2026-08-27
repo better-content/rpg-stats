@@ -8,9 +8,12 @@ import com.bettercontent.rpgstats.common.config.json.CurveDef
 import com.bettercontent.rpgstats.common.curve.Curves
 import com.bettercontent.rpgstats.common.network.Network
 import com.bettercontent.rpgstats.common.network.packets.C2SApplyStats
+import com.bettercontent.rpgstats.common.salience.AspectIdentity
+import com.bettercontent.rpgstats.common.sound.ModSounds
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.util.Mth
@@ -69,7 +72,8 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
         val sourceName: String,
         val color: Int,
         val perPoint: Double,
-        val primary: Boolean
+        val primary: Boolean,
+        val displayAsPercent: Boolean
     )
 
     private data class PropertyRow(
@@ -77,6 +81,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
         val sourceName: String,
         val color: Int,
         val operation: Int,
+        val displayAsPercent: Boolean,
         val originalTotal: Double,
         val workingTotal: Double
     )
@@ -91,6 +96,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
     private var rightScrollOffset = 0.0
     private var leftContentHeight = 0
     private var rightContentHeight = 0
+    private val previewPulses = mutableMapOf<String, Int>()
 
     override fun init() {
         super.init()
@@ -129,8 +135,21 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
         if (workingUnspent > 0 && current < cap) {
             workingAlloc[row.def.id] = current + 1
             workingUnspent--
+            preview(row.def)
             refreshButtons()
         }
+    }
+
+    override fun tick() {
+        super.tick()
+        previewPulses.replaceAll { _, ticks -> ticks - 1 }
+        previewPulses.entries.removeIf { it.value <= 0 }
+    }
+
+    private fun preview(def: ClientStatDef) {
+        val aspect = AspectIdentity.fromStatId(def.id) ?: return
+        previewPulses[def.id] = 8
+        minecraft?.soundManager?.play(SimpleSoundInstance.forUI(ModSounds.forAspect(aspect), 1.0f, .32f))
     }
 
     private fun decrement(row: Row) {
@@ -215,13 +234,19 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
             val hovered = mouseX in layout.leftX until (layout.leftX + layout.columnWidth) &&
                 mouseY in rowY until (rowY + STAT_ROW_HEIGHT) &&
                 mouseY in layout.contentTop until (layout.contentTop + layout.viewportHeight)
+            val pulse = previewPulses[row.def.id] ?: 0
             guiGraphics.fill(layout.leftX, rowY, layout.leftX + layout.columnWidth, rowY + STAT_ROW_HEIGHT - 1,
-                if (hovered) ROW_HOVER else if (index % 2 == 0) ROW_BACKGROUND else ROW_ALTERNATE)
+                if (pulse > 0) ((0x50 + pulse * 8) shl 24) or (row.def.color and 0xFFFFFF)
+                else if (hovered) ROW_HOVER else if (index % 2 == 0) ROW_BACKGROUND else ROW_ALTERNATE)
             guiGraphics.fill(layout.leftX, rowY, layout.leftX + 3, rowY + STAT_ROW_HEIGHT - 1, opaque(row.def.color))
-            if (row.def.icon.isNotEmpty()) guiGraphics.drawString(font, row.def.icon, layout.leftX + 7, rowY + 5, opaque(row.def.color), false)
-            val textX = layout.leftX + 20
-            val maxTextWidth = layout.columnWidth - CONTROL_WIDTH - 26
-            guiGraphics.drawString(font, ellipsize(Component.translatable(row.def.nameKey).string, maxTextWidth),
+            val aspect = AspectIdentity.fromStatId(row.def.id)
+            if (aspect != null) guiGraphics.blit(AspectIdentity.BADGES, layout.leftX + 5, rowY + 7,
+                aspect.index * 18f, 0f, 18, 18, 144, 18)
+            val textX = layout.leftX + 27
+            val maxTextWidth = layout.columnWidth - CONTROL_WIDTH - 33
+            val naturalName = Component.translatable(row.def.nameKey).string
+            val namedIdentity = if (aspect == null) naturalName else "$naturalName — ${aspect.label}"
+            guiGraphics.drawString(font, ellipsize(namedIdentity, maxTextWidth),
                 textX, rowY + 4, opaque(row.def.color), false)
             val points = workingAlloc[row.def.id] ?: 0
             guiGraphics.drawString(font, ellipsize(buildRowSummary(row.def, points).string, maxTextWidth),
@@ -252,10 +277,10 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
             } else ""
             guiGraphics.drawString(font, ellipsize(property.friendlyName + sourceSuffix, textWidth),
                 textX, rowY + 4, opaque(property.color), false)
-            val current = formatEffectValue(property.originalTotal, property.operation != 0)
+            val current = formatEffectValue(property.originalTotal, property.displayAsPercent)
             val changed = property.originalTotal != property.workingTotal
             val values = if (changed) {
-                val pending = formatEffectValue(property.workingTotal, property.operation != 0)
+                val pending = formatEffectValue(property.workingTotal, property.displayAsPercent)
                 Component.translatable("screen.rpg_stats.current_pending", current, pending).string
             } else Component.translatable("screen.rpg_stats.current", current).string
             val valueColor = when {
@@ -339,7 +364,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
                 val candidate = PropertyProvider(effect.attributeId, effect.operation,
                     resolveAttributeName(effect.attributeId).string, sourceName,
                     if (effect.isPrimary) row.def.color else lightenColor(row.def.color),
-                    effect.curve.perPoint, effect.isPrimary)
+                    effect.curve.perPoint, effect.isPrimary, effect.displayAsPercent)
                 if (current == null || (candidate.primary && !current.primary) ||
                     (candidate.primary == current.primary && candidate.perPoint > current.perPoint)) {
                     providers[effect.attributeId] = candidate
@@ -358,7 +383,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
                 }
             }
             PropertyRow(provider.friendlyName, provider.sourceName, provider.color,
-                provider.operation, originalTotal, workingTotal)
+                provider.operation, provider.displayAsPercent, originalTotal, workingTotal)
         }
     }
 
@@ -380,7 +405,17 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
     private fun buildTooltip(def: ClientStatDef): List<Component> {
         if (def.effects.isEmpty()) return listOf(Component.translatable("tooltip.rpg_stats.no_effects"))
         val currentPoints = workingAlloc[def.id] ?: 0
+        val aspect = AspectIdentity.fromStatId(def.id)
+        val identityLine = if (aspect == null) {
+            Component.translatable("tooltip.rpg_stats.aspect", Component.translatable("aspect.rpg_stats.${def.id.substringAfter(':')}"))
+                .withStyle { it.withColor(def.color) }
+        } else {
+            Component.literal(aspect.badge + " ").withStyle { it.withFont(AspectIdentity.FONT) }
+                .append(Component.translatable("tooltip.rpg_stats.aspect", Component.literal(aspect.label))
+                    .withStyle { it.withFont(ResourceLocation("minecraft", "default")).withColor(def.color) })
+        }
         val lines = mutableListOf(
+            identityLine,
             Component.translatable("tooltip.rpg_stats.points_header", formatPointCounter(def, currentPoints)),
             Component.translatable("tooltip.rpg_stats.effects_header")
         )
@@ -392,7 +427,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
             lines += Component.translatable(role).append(Component.literal(": "))
                 .append(resolveAttributeName(effect.attributeId).copy().withStyle { it.withColor(color) })
                 .append(Component.literal(" ")).append(Component.translatable("tooltip.rpg_stats.now_next",
-                    formatEffectValue(current, effect.operation != 0), formatEffectValue(next, effect.operation != 0)))
+                    formatEffectValue(current, effect.displayAsPercent), formatEffectValue(next, effect.displayAsPercent)))
         }
         return lines
     }
@@ -417,7 +452,7 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
     private fun formatMarginalGain(effect: ClientEffectDef, currentPoints: Int): String {
         val current = Curves.eval(currentPoints, effect.curve.toCommon())
         val next = Curves.eval(currentPoints + 1, effect.curve.toCommon())
-        return formatEffectValue(next - current, effect.operation != 0)
+        return formatEffectValue(next - current, effect.displayAsPercent)
     }
 
     private fun formatPointCounter(def: ClientStatDef, points: Int): String =
@@ -437,7 +472,9 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
     private fun trimNumber(value: Double): String = when {
         abs(value) >= 100.0 -> String.format("%.0f", value)
         abs(value) >= 10.0 -> String.format("%.1f", value)
-        else -> String.format("%.2f", value)
+        abs(value) >= 1.0 -> String.format("%.2f", value)
+        abs(value) >= 0.01 -> String.format("%.3f", value)
+        else -> String.format("%.4f", value)
     }
 
     private fun ClientCurveDef.toCommon() = CurveDef(type, cap, k, perPoint, min, max)

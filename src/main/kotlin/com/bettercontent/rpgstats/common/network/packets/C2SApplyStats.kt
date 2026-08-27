@@ -39,7 +39,7 @@ data class C2SApplyStats(
             context.enqueueWork {
                 val sender: ServerPlayer = context.sender ?: return@enqueueWork
                 val stats = StatsCap.get(sender) ?: return@enqueueWork
-                val defs = RegistryState.snapshot()
+                val defs = RegistryState.activeSnapshot()
 
                 val requestedKnown = mutableMapOf<String, Int>()
                 for ((idStr, ptsRaw) in msg.requested) {
@@ -59,12 +59,16 @@ data class C2SApplyStats(
                     return@enqueueWork
                 }
 
+                val deltas = decision.allocations.mapValues { (id, points) -> points - (stats.allocations[id] ?: 0) }
+                    .filterValues { it > 0 }
+
                 stats.allocations.clear()
                 stats.allocations.putAll(decision.allocations)
                 stats.unspentPoints = decision.unspentPoints
 
                 StatAttributeProjector.reapply(sender)
                 Network.syncTo(sender)
+                Network.sendTo(sender, S2CAllocationResult(deltas))
             }
             context.packetHandled = true
         }

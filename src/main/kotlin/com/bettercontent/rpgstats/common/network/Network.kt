@@ -5,6 +5,7 @@ import com.bettercontent.rpgstats.common.data.StatsCap
 import com.bettercontent.rpgstats.common.network.packets.C2SApplyStats
 import com.bettercontent.rpgstats.common.network.packets.S2CStatDefsSync
 import com.bettercontent.rpgstats.common.network.packets.S2CStatsSync
+import com.bettercontent.rpgstats.common.network.packets.S2CAllocationResult
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerPlayer
 import net.minecraftforge.network.NetworkRegistry
@@ -12,7 +13,7 @@ import net.minecraftforge.network.PacketDistributor
 import net.minecraftforge.network.simple.SimpleChannel
 
 object Network {
-    private const val PROTOCOL = "1"
+    private const val PROTOCOL = "2"
 
     val CHANNEL: SimpleChannel = NetworkRegistry.newSimpleChannel(
         ResourceLocation(RpgStatsMod.MODID, "main"),
@@ -26,6 +27,7 @@ object Network {
         CHANNEL.registerMessage(id++, S2CStatDefsSync::class.java, S2CStatDefsSync::encode, S2CStatDefsSync::decode, S2CStatDefsSync::handle)
         CHANNEL.registerMessage(id++, S2CStatsSync::class.java, S2CStatsSync::encode, S2CStatsSync::decode, S2CStatsSync::handle)
         CHANNEL.registerMessage(id++, C2SApplyStats::class.java, C2SApplyStats::encode, C2SApplyStats::decode, C2SApplyStats::handle)
+        CHANNEL.registerMessage(id++, S2CAllocationResult::class.java, S2CAllocationResult::encode, S2CAllocationResult::decode, S2CAllocationResult::handle)
     }
 
     fun sendToServer(msg: Any) {

@@ -7,6 +7,15 @@ import kotlin.test.assertEquals
 
 class CurvesTest {
     @Test
+    fun `Life aspect curve reaches half its cap at twenty points`() {
+        val curve = CurveDef(type = "hyperbola", cap = 8.0, k = 20.0, min = 0.0, max = 8.0)
+
+        assertEquals(0.0, Curves.eval(0, curve))
+        assertEquals(4.0, Curves.eval(20, curve))
+        assertEquals(6.0, Curves.eval(60, curve))
+    }
+
+    @Test
     fun `hyperbola clamps negative points and approaches cap`() {
         val curve = CurveDef(type = "hyperbola", cap = 10.0, k = 5.0, min = 0.0, max = 10.0)
 

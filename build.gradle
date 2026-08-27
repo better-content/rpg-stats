@@ -136,10 +136,36 @@ test {
     useJUnitPlatform()
 }
 
+tasks.named('compileJava', JavaCompile).configure {
+    // MixinGradle writes these beside javac's normal outputs. Declaring them prevents
+    // an incremental/cache restore from considering compilation complete while the
+    // release-critical production refmap is absent.
+    outputs.file(layout.buildDirectory.file('tmp/compileJava/compileJava-refmap.json'))
+    outputs.file(layout.buildDirectory.file('tmp/compileJava/rpg_stats.refmap.json'))
+}
+
+tasks.register('verifyMixinRefmap') {
+    group = 'verification'
+    description = 'Requires the production JAR to contain the generated Mixin refmap.'
+    dependsOn tasks.named('jar')
+    doLast {
+        def archive = tasks.named('jar', Jar).get().archiveFile.get().asFile
+        def zip = new java.util.zip.ZipFile(archive)
+        try {
+            def entry = zip.getEntry('rpg_stats.refmap.json')
+            if (entry == null || entry.size <= 2) {
+                throw new GradleException("${archive.name} is missing rpg_stats.refmap.json")
+            }
+        } finally {
+            zip.close()
+        }
+    }
+}
+
 tasks.register('verifyFast') {
     group = 'verification'
     description = 'Runs the fast deterministic verification lane.'
-    dependsOn tasks.named('check')
+    dependsOn tasks.named('check'), tasks.named('verifyMixinRefmap')
 }
 
 tasks.register('verifyFull') {

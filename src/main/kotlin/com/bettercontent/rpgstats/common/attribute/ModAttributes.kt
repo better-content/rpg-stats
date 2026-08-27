@@ -28,6 +28,22 @@ object ModAttributes {
         RangedAttribute("attribute.name.rpg_stats.mining_speed", 1.0, 1.0, 1024.0).setSyncable(true)
     }
 
+    val RECOIL_REDUCTION: RegistryObject<Attribute> = ATTRIBUTES.register("recoil_reduction") {
+        RangedAttribute("attribute.name.rpg_stats.recoil_reduction", 0.0, -1.0, 1.0).setSyncable(true)
+    }
+
+    val DISPERSION_REDUCTION: RegistryObject<Attribute> = ATTRIBUTES.register("dispersion_reduction") {
+        RangedAttribute("attribute.name.rpg_stats.dispersion_reduction", 0.0, -1.0, 1.0).setSyncable(true)
+    }
+
+    val HARMFUL_EFFECT_DURATION_REDUCTION: RegistryObject<Attribute> = ATTRIBUTES.register("harmful_effect_duration_reduction") {
+        RangedAttribute("attribute.name.rpg_stats.harmful_effect_duration_reduction", 0.0, 0.0, 0.25).setSyncable(true)
+    }
+
+    val BENEFICIAL_EFFECT_DURATION: RegistryObject<Attribute> = ATTRIBUTES.register("beneficial_effect_duration") {
+        RangedAttribute("attribute.name.rpg_stats.beneficial_effect_duration", 0.0, 0.0, 0.25).setSyncable(true)
+    }
+
     fun register(bus: IEventBus) {
         ATTRIBUTES.register(bus)
     }
@@ -40,5 +56,9 @@ object PlayerAttributeRegistration {
         event.add(EntityType.PLAYER, ModAttributes.HUNGER_EFFICIENCY.get())
         event.add(EntityType.PLAYER, ModAttributes.THIRST_EFFICIENCY.get())
         event.add(EntityType.PLAYER, ModAttributes.MINING_SPEED.get())
+        event.add(EntityType.PLAYER, ModAttributes.RECOIL_REDUCTION.get())
+        event.add(EntityType.PLAYER, ModAttributes.DISPERSION_REDUCTION.get())
+        event.add(EntityType.PLAYER, ModAttributes.HARMFUL_EFFECT_DURATION_REDUCTION.get())
+        event.add(EntityType.PLAYER, ModAttributes.BENEFICIAL_EFFECT_DURATION.get())
     }
 }

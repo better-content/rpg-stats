@@ -39,7 +39,11 @@ class StatReloadListener : SimpleJsonResourceReloadListener(GSON, "stats") {
             }
         }
 
-        RegistryState.set(parsed.toMap())
+        RegistryState.set(
+            parsed.entries
+                .sortedWith(compareBy({ it.value.order }, { it.key.toString() }))
+                .associate { it.key to it.value }
+        )
         val server = ServerLifecycleHooks.getCurrentServer()
         if (server != null) {
             server.execute {
@@ -50,7 +54,7 @@ class StatReloadListener : SimpleJsonResourceReloadListener(GSON, "stats") {
     }
 
     private fun broadcastDefsAndReapply(server: MinecraftServer) {
-        val defs = RegistryState.snapshot().values.toList()
+        val defs = RegistryState.activeSnapshot().values.toList()
         Network.sendToAll(S2CStatDefsSync.fromDefs(defs))
 
         for (p in server.playerList.players) {
@@ -61,6 +65,7 @@ class StatReloadListener : SimpleJsonResourceReloadListener(GSON, "stats") {
 
     private fun parseStat(id: ResourceLocation, obj: JsonObject): StatDefinition {
         val nameKey = obj.get("name_key")?.asString ?: "stat.${RpgStatsMod.MODID}.${id.path}"
+        val order = obj.get("order")?.asInt ?: 0
         val maxPoints = obj.get("max_points")?.asInt ?: -1
         val icon = obj.get("icon")?.asString ?: ""
         val color = obj.get("color")?.asString ?: "#FFFFFF"
@@ -91,12 +96,23 @@ class StatReloadListener : SimpleJsonResourceReloadListener(GSON, "stats") {
                         max = curveObj.get("max")?.asDouble ?: Double.POSITIVE_INFINITY
                     )
                     val isPrimary = eo.get("is_primary")?.asBoolean ?: true
-                    effects += AttributeEffect(attrId, op, curve, isPrimary)
+                    val requiredMod = eo.get("requires_mod")?.asString?.takeIf(String::isNotBlank)
+                    val displayAsPercent = eo.get("display_as_percent")?.asBoolean
+                        ?: (op != AttributeModifier.Operation.ADDITION)
+                    effects += AttributeEffect(attrId, op, curve, isPrimary, requiredMod, displayAsPercent)
                 }
             }
         }
 
-        return StatDefinition(id = id, nameKey = nameKey, maxPoints = maxPoints, effects = effects, icon = icon, color = color)
+        return StatDefinition(
+            id = id,
+            nameKey = nameKey,
+            order = order,
+            maxPoints = maxPoints,
+            effects = effects,
+            icon = icon,
+            color = color
+        )
     }
 
     companion object {

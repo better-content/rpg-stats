@@ -3,6 +3,7 @@ package com.bettercontent.rpgstats
 import com.bettercontent.rpgstats.common.item.ModItems
 import com.bettercontent.rpgstats.common.attribute.ModAttributes
 import com.bettercontent.rpgstats.common.network.Network
+import com.bettercontent.rpgstats.common.sound.ModSounds
 import net.minecraftforge.eventbus.api.IEventBus
 import net.minecraftforge.fml.common.Mod
 import net.minecraftforge.fml.ModLoadingContext
@@ -15,6 +16,7 @@ object RpgStatsMod {
         val modBus = resolveModEventBus()
         ModAttributes.register(modBus)
         ModItems.register(modBus)
+        ModSounds.register(modBus)
         Network.init()
         // Everything else is registered via @EventBusSubscriber objects.
     }

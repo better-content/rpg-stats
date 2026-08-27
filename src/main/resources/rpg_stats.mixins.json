@@ -6,8 +6,13 @@
   "refmap": "rpg_stats.refmap.json",
   "mixins": [
     "FoodDataMixin",
+    "LivingEntityEffectMixin",
     "PlayerMixin",
+    "TaczDispersionMixin",
     "ThirstPlayerMixin"
+  ],
+  "client": [
+    "TaczCameraSetupMixin"
   ],
   "injectors": {
     "defaultRequire": 1

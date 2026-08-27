@@ -2,6 +2,12 @@
 
 Pack-owned RPG stats and diminishing-returns system for Forge `1.20.1`.
 
+## Life aspects
+
+Players commit Life points irreversibly during a life to seven broad capabilities: Impact, Tempo, Work, Mobility, Endurance, Robustness, and Control. One aspect may project into several concrete attributes owned by vanilla, Epic Fight, TConstruct, TACZ, Goety, Cold Sweat, or this mod; those integrations do not share a global aspect meter. Twenty points reach half of each configured cap through the `cap × points / (points + 20)` curve, and death clears the allocation ledger.
+
+The stat resources use the same portable glyph and CVD-screened color contract as nutrition and pack-authored TConstruct material profiles. Renewal remains part of the pack vocabulary but is intentionally absent here until a permanent Life capability is justified by the concrete-mechanic inventory.
+
 ## Common commands
 
 ```bash
