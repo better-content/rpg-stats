@@ -1,6 +1,7 @@
 package com.bettercontent.rpgstats.common.network.packets
 
 import com.bettercontent.rpgstats.common.attribute.StatAttributeProjector
+import com.bettercontent.rpgstats.common.compat.ThreadsBridge
 import com.bettercontent.rpgstats.common.data.StatsCap
 import com.bettercontent.rpgstats.common.network.Network
 import com.bettercontent.rpgstats.common.reload.RegistryState
@@ -69,6 +70,10 @@ data class C2SApplyStats(
                 StatAttributeProjector.reapply(sender)
                 Network.syncTo(sender)
                 Network.sendTo(sender, S2CAllocationResult(deltas))
+                if (deltas.isNotEmpty()) stats.lifeAllocationEpisode?.let { token ->
+                    ThreadsBridge.spent(sender, token)
+                    stats.lifeAllocationEpisode = null
+                }
             }
             context.packetHandled = true
         }

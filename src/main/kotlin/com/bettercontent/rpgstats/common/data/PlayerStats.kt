@@ -7,6 +7,7 @@ import net.minecraft.nbt.Tag
 class PlayerStats {
     var lifePeakLevel: Int = 0
     var unspentPoints: Int = 0
+    var lifeAllocationEpisode: String? = null
     val allocations: MutableMap<String, Int> = mutableMapOf()
 
     fun totalAllocated(): Int = allocations.values.sum()
@@ -16,6 +17,7 @@ class PlayerStats {
     fun resetForDeath(currentLevel: Int) {
         lifePeakLevel = currentLevel.coerceAtLeast(0)
         unspentPoints = 0
+        lifeAllocationEpisode = null
         allocations.clear()
     }
 
@@ -23,6 +25,7 @@ class PlayerStats {
         val tag = CompoundTag()
         tag.putInt("lifePeakLevel", lifePeakLevel)
         tag.putInt("unspentPoints", unspentPoints)
+        lifeAllocationEpisode?.takeIf { it.isNotBlank() && it.length <= 128 }?.let { tag.putString("lifeAllocationEpisode", it) }
 
         val list = ListTag()
         allocations.forEach { (id, pts) ->
@@ -38,6 +41,7 @@ class PlayerStats {
     fun deserializeNBT(tag: CompoundTag) {
         lifePeakLevel = tag.getInt("lifePeakLevel")
         unspentPoints = tag.getInt("unspentPoints")
+        lifeAllocationEpisode = tag.getString("lifeAllocationEpisode").takeIf { it.isNotBlank() && it.length <= 128 }
         allocations.clear()
 
         val list = tag.getList("allocations", Tag.TAG_COMPOUND.toInt())
