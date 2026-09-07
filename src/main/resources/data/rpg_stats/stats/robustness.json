@@ -2,7 +2,7 @@
   "name_key": "stat.rpg_stats.fortitude",
   "order": 60,
   "icon": "◆",
-  "color": "#1175FC",
+  "color": "#AF6A2F",
   "effects": [
     {
       "type": "attribute",

@@ -2,7 +2,7 @@
   "name_key": "stat.rpg_stats.aptitude",
   "order": 30,
   "icon": "⚒",
-  "color": "#CAA903",
+  "color": "#F0E2C5",
   "effects": [
     {
       "type": "attribute",

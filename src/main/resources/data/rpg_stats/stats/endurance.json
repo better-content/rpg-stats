@@ -2,7 +2,7 @@
   "name_key": "stat.rpg_stats.constitution",
   "order": 50,
   "icon": "∞",
-  "color": "#35BBD0",
+  "color": "#52606A",
   "effects": [
     {
       "type": "attribute",

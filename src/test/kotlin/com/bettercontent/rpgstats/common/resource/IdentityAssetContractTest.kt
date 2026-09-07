@@ -25,7 +25,7 @@ class IdentityAssetContractTest {
     @Test
     fun `badge font and motifs cover the exact identity contract`() {
         val badge = resource("/assets/rpg_stats/textures/gui/aspect_badges.png")
-        assertEquals("b59717a5da26f633cd120f09b750c15875577ec9c74a8c7838c32aea8ee5eeed",
+        assertEquals("84bc0c5fe762fe2df5f1ed53a2e138ecb03bbfbb386657039ad8333927bf51ab",
             HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(badge)))
         ImageIO.read(badge.inputStream()).also { image -> assertEquals(144, image.width); assertEquals(18, image.height) }
         val font = resource("/assets/rpg_stats/font/aspects.json").decodeToString()

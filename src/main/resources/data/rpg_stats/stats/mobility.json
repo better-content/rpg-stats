@@ -2,7 +2,7 @@
   "name_key": "stat.rpg_stats.agility",
   "order": 40,
   "icon": "➜",
-  "color": "#C0E304",
+  "color": "#E0B01F",
   "effects": [
     {
       "type": "attribute",

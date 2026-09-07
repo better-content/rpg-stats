@@ -2,7 +2,7 @@
   "name_key": "stat.rpg_stats.dexterity",
   "order": 20,
   "icon": "»",
-  "color": "#AA652B",
+  "color": "#00A985",
   "effects": [
     {
       "type": "attribute",

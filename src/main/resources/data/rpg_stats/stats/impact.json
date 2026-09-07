@@ -2,7 +2,7 @@
   "name_key": "stat.rpg_stats.strength",
   "order": 10,
   "icon": "✦",
-  "color": "#E4717D",
+  "color": "#FF4055",
   "effects": [
     {
       "type": "attribute",

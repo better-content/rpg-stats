@@ -2,7 +2,7 @@
   "name_key": "stat.rpg_stats.perception",
   "order": 80,
   "icon": "⊕",
-  "color": "#8A6CB2",
+  "color": "#8E5BB7",
   "effects": [
     {
       "type": "attribute",
