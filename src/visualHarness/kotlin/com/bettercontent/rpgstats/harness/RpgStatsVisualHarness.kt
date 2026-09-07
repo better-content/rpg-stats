@@ -22,7 +22,7 @@ object RpgStatsVisualHarness {
     private var opened = false
     private var startupTicks = 0
     private var screenTicks = 0
-    private var statsCaptured = false
+    private var statsCaptures = 0
     private var soundScreenTicks = 0
     private var soundCaptured = false
     private var heartScreenTicks = 0
@@ -44,24 +44,44 @@ object RpgStatsVisualHarness {
             if (minecraft.overlay == null && minecraft.screen != null) startupTicks++
             if (startupTicks >= 20) {
                 seedFixture()
-                val screen = StatsScreen()
-                minecraft.setScreen(screen)
-                screen.children().filterIsInstance<Button>().firstOrNull { it.message.string == "+" }?.onPress()
+                ClientCache.stats = ClientStatsSnapshot(unspent = 4, lifePeak = 27, allocations = emptyMap())
+                minecraft.setScreen(StatsScreen())
                 opened = true
-                println("RPG_STATS_VISUAL_HARNESS screen-ready")
+                println("RPG_STATS_VISUAL_HARNESS empty-compact-stats-ready")
             }
             return
         }
 
-        if (!statsCaptured && minecraft.screen is StatsScreen) {
+        if (statsCaptures < 3 && minecraft.screen is StatsScreen) {
             screenTicks++
             if (screenTicks >= 40) {
                 Screenshot.grab(minecraft.gameDirectory, minecraft.mainRenderTarget) { message ->
-                    println("RPG_STATS_VISUAL_HARNESS stats-screenshot $message")
+                    val state = when (statsCaptures) {
+                        0 -> "empty gui-scale=3"
+                        1 -> "pending gui-scale=3"
+                        else -> "pending gui-scale=2"
+                    }
+                    println("RPG_STATS_VISUAL_HARNESS stats-screenshot $state $message")
                 }
-                statsCaptured = true
-                minecraft.setScreen(IdentitySoundReviewScreen())
-                println("RPG_STATS_VISUAL_HARNESS sound-review-ready")
+                statsCaptures++
+                screenTicks = 0
+                if (statsCaptures == 1) {
+                    seedStats()
+                    val screen = StatsScreen()
+                    minecraft.setScreen(screen)
+                    screen.children().filterIsInstance<Button>().firstOrNull { it.message.string == "+" }?.onPress()
+                    println("RPG_STATS_VISUAL_HARNESS pending-compact-stats-ready")
+                } else if (statsCaptures == 2) {
+                    minecraft.options.guiScale().set(2)
+                    minecraft.resizeDisplay()
+                    val screen = StatsScreen()
+                    minecraft.setScreen(screen)
+                    screen.children().filterIsInstance<Button>().firstOrNull { it.message.string == "+" }?.onPress()
+                    println("RPG_STATS_VISUAL_HARNESS expanded-stats-ready")
+                } else {
+                    minecraft.setScreen(IdentitySoundReviewScreen())
+                    println("RPG_STATS_VISUAL_HARNESS sound-review-ready")
+                }
             }
             return
         }
@@ -140,6 +160,10 @@ object RpgStatsVisualHarness {
                 effect("goety:spell_range", 1, 0.25, primary = false)
             )
         )
+        seedStats()
+    }
+
+    private fun seedStats() {
         ClientCache.stats = ClientStatsSnapshot(
             unspent = 4,
             lifePeak = 27,
