@@ -53,6 +53,10 @@ internal object StatsScreenLayoutPolicy {
     const val HEADER_HEIGHT = 10
     const val ATTRIBUTE_TOP = 47
     const val ATTRIBUTE_TILE_HEIGHT = 28
+    const val BADGE_SIZE = 18
+    const val BADGE_X = 5
+    const val BADGE_Y = 2
+    const val BADGE_TEXT_GAP = 2
     const val CONTROL_TOP = 2
     const val CONTROL_SIZE = 14
     const val DETAIL_TOP = 16
@@ -300,14 +304,28 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
                 else if (hovered) ROW_HOVER else if (index % 2 == 0) ROW_BACKGROUND else ROW_ALTERNATE)
             guiGraphics.fill(rowX, rowY, rowX + 3, rowY + layout.attributeTileHeight - 1, opaque(row.def.color))
             val aspect = AspectIdentity.fromStatId(row.def.id)
-            val textX = rowX + 6
-            val maxNameWidth = layout.attributeTileWidth - CONTROL_WIDTH - 10
+            if (aspect != null) {
+                guiGraphics.blit(
+                    AspectIdentity.BADGES,
+                    rowX + StatsScreenLayoutPolicy.BADGE_X,
+                    rowY + StatsScreenLayoutPolicy.BADGE_Y,
+                    (aspect.index * StatsScreenLayoutPolicy.BADGE_SIZE).toFloat(),
+                    0f,
+                    StatsScreenLayoutPolicy.BADGE_SIZE,
+                    StatsScreenLayoutPolicy.BADGE_SIZE,
+                    StatsScreenLayoutPolicy.BADGE_SIZE * AspectIdentity.entries.size,
+                    StatsScreenLayoutPolicy.BADGE_SIZE
+                )
+            }
+            val textX = if (aspect == null) rowX + 6 else rowX + StatsScreenLayoutPolicy.BADGE_X +
+                StatsScreenLayoutPolicy.BADGE_SIZE + StatsScreenLayoutPolicy.BADGE_TEXT_GAP
+            val maxNameWidth = rowX + layout.attributeTileWidth - CONTROL_WIDTH - 4 - textX
             guiGraphics.enableScissor(textX, rowY, textX + maxNameWidth, rowY + 13)
-            guiGraphics.drawString(font, statNameWithBadge(row.def, aspect),
+            guiGraphics.drawString(font, Component.translatable(row.def.nameKey),
                 textX, rowY + 3, opaque(row.def.color), false)
             guiGraphics.disableScissor()
             val points = workingAlloc[row.def.id] ?: 0
-            val detailX = if (aspect == null) textX else textX + 20
+            val detailX = textX
             guiGraphics.drawString(font, ellipsize(buildRowSummary(row.def, points).string,
                 rowX + layout.attributeTileWidth - detailX - 6),
                 detailX, rowY + StatsScreenLayoutPolicy.DETAIL_TOP, SECONDARY_TEXT, false)
@@ -462,13 +480,6 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
         val secondaryCount = (def.effects.size - 1).coerceAtLeast(0)
         if (secondaryCount > 0) result.append(Component.translatable("screen.rpg_stats.more_effects", secondaryCount.toString()))
         return result
-    }
-
-    private fun statNameWithBadge(def: ClientStatDef, aspect: AspectIdentity?): Component {
-        if (aspect == null) return Component.translatable(def.nameKey)
-        return Component.literal(aspect.badge).withStyle { it.withFont(AspectIdentity.FONT) }
-            .append(Component.literal(" ").withStyle { it.withFont(DEFAULT_FONT) })
-            .append(Component.translatable(def.nameKey).withStyle { it.withFont(DEFAULT_FONT) })
     }
 
     private fun buildTooltip(def: ClientStatDef): List<Component> {

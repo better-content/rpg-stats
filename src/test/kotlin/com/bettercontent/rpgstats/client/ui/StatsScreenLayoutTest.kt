@@ -19,6 +19,15 @@ class StatsScreenLayoutTest {
             StatsScreenLayoutPolicy.CONTROL_TOP + StatsScreenLayoutPolicy.CONTROL_SIZE <= StatsScreenLayoutPolicy.DETAIL_TOP,
             "top-line controls must end before next-point detail text begins"
         )
+        assertTrue(
+            StatsScreenLayoutPolicy.BADGE_Y + StatsScreenLayoutPolicy.BADGE_SIZE <= layout.attributeTileHeight,
+            "the full aspect badge must fit inside its row"
+        )
+        assertTrue(
+            StatsScreenLayoutPolicy.BADGE_X + StatsScreenLayoutPolicy.BADGE_SIZE +
+                StatsScreenLayoutPolicy.BADGE_TEXT_GAP < layout.attributeTileWidth - 62,
+            "attribute text must begin after the badge and before its controls"
+        )
         assertTrue(layout.footerTop < layout.panelY + layout.panelHeight)
     }
 
