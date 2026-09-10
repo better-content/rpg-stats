@@ -96,12 +96,19 @@ repositories {
     maven { url = 'https://thedarkcolour.github.io/KotlinForForge/' }
     maven { url = 'https://maven.latvian.dev/releases' }
     maven { url = 'https://maven.architectury.dev/' }
+    maven { url = 'https://www.cursemaven.com'; content { includeGroup 'curse.maven' } }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor "org.spongepowered:mixin:0.8.5:processor"
     implementation fg.deobf("thedarkcolour:kotlinforforge:${kff_version}")
+    // The language provider is nested into KotlinForForge at runtime; expose its
+    // typed loading-context API to compilation instead of discovering it reflectively.
+    compileOnly "thedarkcolour:kfflang:${kff_version}"
+    compileOnly fg.deobf('curse.maven:blood-magic-224791:7956981')
+    runtimeOnly fg.deobf('curse.maven:blood-magic-224791:7956981')
+    runtimeOnly fg.deobf('curse.maven:patchouli-306770:7731017')
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5:2.0.0'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testImplementation 'com.google.code.gson:gson:2.10.1'
@@ -142,6 +149,9 @@ tasks.named('compileJava', JavaCompile).configure {
     // release-critical production refmap is absent.
     outputs.file(layout.buildDirectory.file('tmp/compileJava/compileJava-refmap.json'))
     outputs.file(layout.buildDirectory.file('tmp/compileJava/rpg_stats.refmap.json'))
+    // The Mixin annotation processor does not recreate refmaps reliably from javac's
+    // incremental state when these sidecars are deleted independently of class files.
+    options.incremental = false
 }
 
 tasks.register('verifyMixinRefmap') {

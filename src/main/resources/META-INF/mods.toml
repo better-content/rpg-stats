@@ -22,3 +22,10 @@ mandatory=true
 versionRange="[1.20.1,1.21)"
 ordering="NONE"
 side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="bloodmagic"
+mandatory=false
+versionRange="[3.3.7,3.4)"
+ordering="AFTER"
+side="BOTH"

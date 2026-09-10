@@ -7,15 +7,14 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.Container
 import net.minecraft.world.item.ItemStack
 import net.minecraftforge.fml.ModList
+import wayoftime.bloodmagic.altar.IBloodAltar
 
 object StillBeatingHeartAltarHandler {
     private const val BLOODMAGIC_MODID = "bloodmagic"
-    private const val BLOOD_ALTAR_CLASS = "wayoftime.bloodmagic.common.tile.TileAltar"
     private const val DISCOVERY_RADIUS = 8
     private const val DISCOVERY_INTERVAL_TICKS = 20
 
     private val trackedAltars = mutableMapOf<String, MutableSet<Long>>()
-    private var fillMainTankMethod: java.lang.reflect.Method? = null
 
     fun isBloodMagicLoaded(): Boolean = ModList.get().isLoaded(BLOODMAGIC_MODID)
 
@@ -97,13 +96,9 @@ object StillBeatingHeartAltarHandler {
         return null
     }
 
-    private fun isBloodAltar(blockEntity: Any): Boolean {
-        return blockEntity.javaClass.name == BLOOD_ALTAR_CLASS
-    }
+    private fun isBloodAltar(blockEntity: Any): Boolean = blockEntity is IBloodAltar
 
     private fun fillAltar(blockEntity: Any, amount: Int): Int {
-        val method = fillMainTankMethod ?: blockEntity.javaClass.getMethod("fillMainTank", Int::class.javaPrimitiveType)
-            .also { fillMainTankMethod = it }
-        return method.invoke(blockEntity, amount) as? Int ?: 0
+        return (blockEntity as IBloodAltar).fillMainTank(amount)
     }
 }

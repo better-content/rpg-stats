@@ -9,14 +9,17 @@ import com.bettercontent.rpgstats.client.ui.StatsScreen
 import net.minecraft.client.Minecraft
 import net.minecraft.client.Screenshot
 import net.minecraft.client.gui.components.Button
+import net.minecraftforge.api.distmarker.Dist
 import net.minecraftforge.event.TickEvent
-import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.eventbus.api.SubscribeEvent
+import net.minecraftforge.fml.common.Mod
+import com.bettercontent.rpgstats.RpgStatsMod
 
 /**
  * Development-only visual fixture. The dedicated runVisualHarness Gradle run includes this
  * source set alongside RPG Stats and captures the stats screen without a modpack or world.
  */
+@Mod.EventBusSubscriber(modid = RpgStatsMod.MODID, value = [Dist.CLIENT], bus = Mod.EventBusSubscriber.Bus.FORGE)
 object RpgStatsVisualHarness {
     private val heartCaptureTicks = setOf(1, 13, 25, 37)
     private var opened = false
@@ -28,12 +31,6 @@ object RpgStatsVisualHarness {
     private var heartScreenTicks = 0
     private var heartCaptures = 0
     private var ticksAfterCapture = 0
-
-    @JvmStatic
-    fun install() {
-        MinecraftForge.EVENT_BUS.register(this)
-        println("RPG_STATS_VISUAL_HARNESS installed")
-    }
 
     @SubscribeEvent
     fun onClientTick(event: TickEvent.ClientTickEvent) {
