@@ -3,7 +3,7 @@ package com.bettercontent.rpgstats.api.event
 import net.minecraft.server.level.ServerPlayer
 import net.minecraftforge.eventbus.api.Event
 
-/** Posted after the server makes Life allocation points available or accepts their expenditure. */
+/** Posted after the server changes Life allocations, including a final death reset. */
 class LifeAllocationEvent(
     val player: ServerPlayer,
     val state: State,
@@ -11,6 +11,7 @@ class LifeAllocationEvent(
 ) : Event() {
     enum class State {
         AVAILABLE,
-        SPENT
+        SPENT,
+        LOST_ON_DEATH
     }
 }

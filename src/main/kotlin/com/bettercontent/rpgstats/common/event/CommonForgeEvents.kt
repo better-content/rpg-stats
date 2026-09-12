@@ -31,6 +31,7 @@ import net.minecraftforge.fml.common.Mod
 
 @Mod.EventBusSubscriber(modid = RpgStatsMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 object CommonForgeEvents {
+    private const val LOST_ALLOCATION_TAG = "rpg_stats_pending_allocation_loss"
     private const val PENDING_HEARTS_TAG: String = "rpg_stats_pending_hearts"
 
     @SubscribeEvent
@@ -55,6 +56,12 @@ object CommonForgeEvents {
             newP.getCapability(StatsCap.CAP).ifPresent { newStats ->
                 // Wipe, but baseline peak to current XP level to avoid instant refunds on keep-XP rules.
                 newStats.resetForDeath((newP as? ServerPlayer)?.experienceLevel ?: 0)
+                if (newP is ServerPlayer && oldP.persistentData.getBoolean(LOST_ALLOCATION_TAG)) {
+                    oldP.persistentData.remove(LOST_ALLOCATION_TAG)
+                    com.bettercontent.rpgstats.common.points.LifeAllocationEvents.post(newP,
+                        com.bettercontent.rpgstats.api.event.LifeAllocationEvent.State.LOST_ON_DEATH,
+                        com.bettercontent.rpgstats.common.points.LifeAllocationEvents.newEpisode(newP))
+                }
             }
         } else {
             oldP.getCapability(StatsCap.CAP).ifPresent { oldStats ->
@@ -133,6 +140,13 @@ object CommonForgeEvents {
         // level before that happens, but wait until LOWEST to confirm the death survived
         // any cancellation before creating the heart.
         StillBeatingHeartData.captureDeathLevel(player.persistentData, player.experienceLevel)
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    fun recordAllocationLoss(event: LivingDeathEvent) {
+        val player = event.entity as? ServerPlayer ?: return
+        if (event.isCanceled) return
+        player.persistentData.putBoolean(LOST_ALLOCATION_TAG, (StatsCap.get(player)?.totalAllocated() ?: 0) > 0)
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
