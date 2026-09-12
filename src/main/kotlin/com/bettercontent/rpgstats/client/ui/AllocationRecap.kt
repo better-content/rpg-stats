@@ -44,7 +44,7 @@ object AllocationRecap {
     }
 
     private fun component(): Component {
-        val result: MutableComponent = Component.literal("Life shaped: ").withStyle { it.withColor(0xB8BEC7) }
+        val result: MutableComponent = Component.literal("Stats increased: ").withStyle { it.withColor(0xB8BEC7) }
         val defs = ClientCache.defs.associateBy { it.id }
         deltas.entries.sortedBy { AspectIdentity.fromStatId(it.key)?.index ?: 99 }.forEachIndexed { index, (id, amount) ->
             if (index > 0) result.append(Component.literal(" · ").withStyle { it.withColor(0x777777) })
