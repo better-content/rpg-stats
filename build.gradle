@@ -78,6 +78,17 @@ minecraft {
             }
         }
 
+        gameTestServer {
+            workingDirectory project.file('run-gametest')
+            property 'forge.logging.console.level', 'info'
+            property 'forge.enabledGameTestNamespaces', mod_id
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+
         data {
             workingDirectory project.file('run')
             property 'forge.logging.console.level', 'info'
@@ -180,8 +191,17 @@ tasks.register('verifyFast') {
 
 tasks.register('verifyFull') {
     group = 'verification'
-    description = 'Runs the full verification lane. This project currently has no higher-signal lane beyond verifyFast.'
-    dependsOn tasks.named('verifyFast')
+    description = 'Runs JVM verification and transformed production GameTests.'
+    dependsOn tasks.named('verifyFast'), tasks.named('runGameTestServer')
+}
+
+tasks.register('syncGameTestStructures', Copy) {
+    from 'src/main/resources/gameteststructures'
+    into 'run-gametest/gameteststructures'
+}
+
+tasks.matching { it.name == 'prepareRunGameTestServer' }.configureEach {
+    dependsOn tasks.named('syncGameTestStructures')
 }
 
 tasks.register('prepareVisualHarnessOptions', Copy) {

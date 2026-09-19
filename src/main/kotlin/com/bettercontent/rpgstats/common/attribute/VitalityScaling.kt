@@ -3,6 +3,7 @@ package com.bettercontent.rpgstats.common.attribute
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.effect.MobEffectInstance
 import net.minecraft.world.entity.player.Player
+import net.minecraft.nbt.CompoundTag
 
 object VitalityScaling {
     @JvmStatic
@@ -15,13 +16,14 @@ object VitalityScaling {
         }
         if (adjustment == 0.0 || original.duration <= 1) return original
         val duration = (original.duration * (1.0 + adjustment)).toInt().coerceAtLeast(1)
-        return MobEffectInstance(
-            original.effect,
-            duration,
-            original.amplifier,
-            original.isAmbient,
-            original.isVisible,
-            original.isVisible
-        )
+        return withDuration(original, duration)
+    }
+
+    /** Round-trip the whole effect record: nested effects, factor state, curatives and
+     * independent particle/icon flags belong to the incoming instance. */
+    internal fun withDuration(original: MobEffectInstance, duration: Int): MobEffectInstance {
+        val record = original.save(CompoundTag())
+        record.putInt("Duration", duration)
+        return requireNotNull(MobEffectInstance.load(record)) { "Registered effect failed to reload" }
     }
 }
