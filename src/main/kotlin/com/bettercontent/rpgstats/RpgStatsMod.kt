@@ -3,6 +3,9 @@ package com.bettercontent.rpgstats
 import com.bettercontent.rpgstats.common.item.ModItems
 import com.bettercontent.rpgstats.common.block.ModBlocks
 import com.bettercontent.rpgstats.common.block.entity.ModBlockEntities
+import com.bettercontent.rpgstats.common.config.HeartFragmentConfig
+import net.minecraftforge.fml.ModLoadingContext
+import net.minecraftforge.fml.config.ModConfig
 import com.bettercontent.rpgstats.common.attribute.ModAttributes
 import com.bettercontent.rpgstats.common.network.Network
 import com.bettercontent.rpgstats.common.sound.ModSounds
@@ -15,6 +18,7 @@ object RpgStatsMod {
 
     init {
         val modBus = KotlinModLoadingContext.get().getKEventBus()
+        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, HeartFragmentConfig.SPEC)
         ModAttributes.register(modBus)
         ModItems.register(modBus)
         ModBlocks.register(modBus)
