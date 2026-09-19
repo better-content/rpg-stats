@@ -3,6 +3,9 @@ package com.bettercontent.rpgstats.common.points
 import com.bettercontent.rpgstats.common.data.StatsCap
 import com.bettercontent.rpgstats.api.event.LifeAllocationEvent
 import com.bettercontent.rpgstats.common.network.Network
+import com.bettercontent.rpgstats.common.network.packets.S2CAllocationResult
+import com.bettercontent.rpgstats.common.attribute.StatAttributeProjector
+import com.bettercontent.rpgstats.common.reload.RegistryState
 import net.minecraft.server.level.ServerPlayer
 
 object PointAwarder {
@@ -18,6 +21,12 @@ object PointAwarder {
             val diff = cur - stats.lifePeakLevel
             stats.lifePeakLevel = cur
             stats.unspentPoints += diff
+            val spent = AutoAllocationPlan.apply(stats, RegistryState.activeSnapshot().mapKeys { it.key.toString() }
+                .mapValues { it.value.maxPoints }, diff)
+            if (spent.isNotEmpty()) {
+                StatAttributeProjector.reapply(player)
+                Network.sendTo(player, S2CAllocationResult(spent))
+            }
             LifeAllocationEvents.beginEpisode(stats, LifeAllocationEvents.newEpisode(player))?.let { episodeId ->
                 LifeAllocationEvents.post(player, LifeAllocationEvent.State.AVAILABLE, episodeId)
             }

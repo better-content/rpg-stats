@@ -3,7 +3,9 @@ package com.bettercontent.rpgstats.client.cache
 data class ClientStatsSnapshot(
     val unspent: Int = 0,
     val lifePeak: Int = 0,
-    val allocations: Map<String, Int> = emptyMap()
+    val allocations: Map<String, Int> = emptyMap(),
+    val autoAllocationEnabled: Boolean = false,
+    val autoAllocationPlan: List<String> = emptyList()
 )
 
 data class ClientCurveDef(

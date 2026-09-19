@@ -4,9 +4,11 @@ Pack-owned RPG stats and diminishing-returns system for Forge `1.20.1`.
 
 ## Life aspects
 
-Players commit Life points irreversibly during a life to eight broad capabilities: Impact, Tempo, Work, Mobility, Endurance, Robustness, Renewal, and Control. One aspect may project into several concrete attributes owned by vanilla, Epic Fight, TConstruct, TACZ, Goety, Cold Sweat, or this mod; those integrations do not share a global aspect meter. Twenty points reach half of each configured cap through the `cap × points / (points + 20)` curve, and death clears the allocation ledger.
+Players commit Life points irreversibly during a life to eight broad capabilities: Impact, Tempo, Work, Mobility, Endurance, Robustness, Renewal, and Control. One aspect may project into several concrete attributes owned by vanilla, Epic Fight, TConstruct, TACZ, Goety, Cold Sweat, or this mod; those integrations do not share a global aspect meter. Twenty points reach half of each configured cap through the `cap × points / (points + 20)` curve, and death clears the allocation ledger. Impact supplies a bounded percentage to direct player, projectile, and player-attributed spell damage once at the server damage boundary; owned creatures and environmental damage remain outside that channel.
 
 The stat resources use the same portable glyph and CVD-screened color contract as nutrition and pack-authored TConstruct material profiles. The allocation screen keeps all eight capabilities visible in a fixed two-column grid; only the resulting-property list scrolls, and properties with no committed or draft effect are omitted.
+
+The **Auto plan** editor holds an ordered, persistent per-player list. It can be enabled, paused, reordered, cleared, and edited across deaths or reconnects. Each newly earned point advances one position in the ordered plan. The server validates every entry against active definitions and caps before changing the plan or spending a point; an unavailable or capped choice is skipped and no unearned power is retained.
 
 ## Common commands
 

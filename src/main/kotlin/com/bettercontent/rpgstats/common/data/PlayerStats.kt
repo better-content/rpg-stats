@@ -9,6 +9,10 @@ class PlayerStats {
     var unspentPoints: Int = 0
     var lifeAllocationEpisode: String? = null
     val allocations: MutableMap<String, Int> = mutableMapOf()
+    /** A durable, ordered spending preference. It belongs to the character, not a Life. */
+    var autoAllocationEnabled: Boolean = false
+    var autoAllocationCursor: Int = 0
+    val autoAllocationPlan: MutableList<String> = mutableListOf()
 
     fun totalAllocated(): Int = allocations.values.sum()
 
@@ -35,6 +39,15 @@ class PlayerStats {
             list.add(e)
         }
         tag.put("allocations", list)
+        tag.putBoolean("autoAllocationEnabled", autoAllocationEnabled)
+        tag.putInt("autoAllocationCursor", autoAllocationCursor.coerceAtLeast(0))
+        val plan = ListTag()
+        autoAllocationPlan.take(64).forEach { id ->
+            if (id.isNotBlank() && id.length <= 128) {
+                plan.add(net.minecraft.nbt.StringTag.valueOf(id))
+            }
+        }
+        tag.put("autoAllocationPlan", plan)
         return tag
     }
 
@@ -51,5 +64,14 @@ class PlayerStats {
             val pts = e.getInt("pts")
             if (id.isNotBlank() && pts > 0) allocations[id] = pts
         }
+        autoAllocationEnabled = tag.getBoolean("autoAllocationEnabled")
+        autoAllocationCursor = tag.getInt("autoAllocationCursor").coerceAtLeast(0)
+        autoAllocationPlan.clear()
+        val plan = tag.getList("autoAllocationPlan", Tag.TAG_STRING.toInt())
+        for (i in 0 until minOf(plan.size, 64)) {
+            val id = plan.getString(i)
+            if (id.isNotBlank() && id.length <= 128 && id !in autoAllocationPlan) autoAllocationPlan += id
+        }
+        if (autoAllocationPlan.isEmpty()) autoAllocationCursor = 0
     }
 }

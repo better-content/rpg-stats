@@ -2,6 +2,7 @@ package com.bettercontent.rpgstats.common.event
 
 import com.bettercontent.rpgstats.RpgStatsMod
 import com.bettercontent.rpgstats.common.attribute.MiningSpeedScaling
+import com.bettercontent.rpgstats.common.attribute.OutgoingDamageScaling
 import com.bettercontent.rpgstats.common.attribute.ModAttributes
 import com.bettercontent.rpgstats.common.attribute.StatAttributeProjector
 import com.bettercontent.rpgstats.common.data.PlayerStatsProvider
@@ -24,6 +25,7 @@ import net.minecraftforge.event.AddReloadListenerEvent
 import net.minecraftforge.event.AttachCapabilitiesEvent
 import net.minecraftforge.event.TickEvent
 import net.minecraftforge.event.entity.living.LivingDeathEvent
+import net.minecraftforge.event.entity.living.LivingHurtEvent
 import net.minecraftforge.event.entity.player.PlayerEvent
 import net.minecraftforge.eventbus.api.EventPriority
 import net.minecraftforge.eventbus.api.SubscribeEvent
@@ -70,6 +72,10 @@ object CommonForgeEvents {
                     newStats.unspentPoints = oldStats.unspentPoints
                     newStats.allocations.clear()
                     newStats.allocations.putAll(oldStats.allocations)
+                    newStats.autoAllocationEnabled = oldStats.autoAllocationEnabled
+                    newStats.autoAllocationCursor = oldStats.autoAllocationCursor
+                    newStats.autoAllocationPlan.clear()
+                    newStats.autoAllocationPlan.addAll(oldStats.autoAllocationPlan)
                 }
             }
         }
@@ -111,6 +117,11 @@ object CommonForgeEvents {
     fun onBreakSpeed(event: PlayerEvent.BreakSpeed) {
         val multiplier = event.entity.getAttributeValue(ModAttributes.MINING_SPEED.get())
         event.newSpeed = MiningSpeedScaling.scale(event.newSpeed, multiplier)
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    fun onLivingHurt(event: LivingHurtEvent) {
+        if (!event.isCanceled) event.amount = OutgoingDamageScaling.scale(event.source, event.entity, event.amount)
     }
 
     @SubscribeEvent

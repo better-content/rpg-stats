@@ -11,7 +11,9 @@ import java.util.function.Supplier
 data class S2CStatsSync(
     val unspent: Int,
     val lifePeak: Int,
-    val allocations: Map<String, Int>
+    val allocations: Map<String, Int>,
+    val autoAllocationEnabled: Boolean,
+    val autoAllocationPlan: List<String>
 ) {
     companion object {
         fun encode(msg: S2CStatsSync, buf: FriendlyByteBuf) {
@@ -22,6 +24,9 @@ data class S2CStatsSync(
                 buf.writeUtf(k)
                 buf.writeVarInt(v)
             }
+            buf.writeBoolean(msg.autoAllocationEnabled)
+            buf.writeVarInt(msg.autoAllocationPlan.size)
+            msg.autoAllocationPlan.forEach(buf::writeUtf)
         }
 
         fun decode(buf: FriendlyByteBuf): S2CStatsSync {
@@ -34,14 +39,17 @@ data class S2CStatsSync(
                 val v = buf.readVarInt()
                 if (v > 0) map[k] = v
             }
-            return S2CStatsSync(unspent, lifePeak, map)
+            val enabled = buf.readBoolean()
+            val plan = MutableList(buf.readVarInt().coerceIn(0, 64)) { buf.readUtf(128) }
+            return S2CStatsSync(unspent, lifePeak, map, enabled, plan)
         }
 
         fun handle(msg: S2CStatsSync, ctx: Supplier<NetworkEvent.Context>) {
             ctx.get().enqueueWork {
                 DistExecutor.unsafeRunWhenOn(Dist.CLIENT) {
                     Runnable {
-                        ClientCache.stats = ClientStatsSnapshot(msg.unspent, msg.lifePeak, msg.allocations)
+                        ClientCache.stats = ClientStatsSnapshot(msg.unspent, msg.lifePeak, msg.allocations,
+                            msg.autoAllocationEnabled, msg.autoAllocationPlan)
                     }
                 }
             }

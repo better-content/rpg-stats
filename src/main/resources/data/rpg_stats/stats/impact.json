@@ -6,9 +6,9 @@
   "effects": [
     {
       "type": "attribute",
-      "attribute": "minecraft:generic.attack_damage",
-      "operation": "add",
-      "curve": { "type": "hyperbola", "cap": 6.0, "k": 20.0, "min": 0.0, "max": 6.0 },
+      "attribute": "rpg_stats:outgoing_damage",
+      "operation": "multiply_base",
+      "curve": { "type": "hyperbola", "cap": 0.6, "k": 20.0, "min": 0.0, "max": 0.6 },
       "is_primary": true
     },
     {

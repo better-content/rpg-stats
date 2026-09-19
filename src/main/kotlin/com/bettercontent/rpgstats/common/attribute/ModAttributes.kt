@@ -36,6 +36,10 @@ object ModAttributes {
         RangedAttribute("attribute.name.rpg_stats.dispersion_reduction", 0.0, -1.0, 1.0).setSyncable(true)
     }
 
+    val OUTGOING_DAMAGE: RegistryObject<Attribute> = ATTRIBUTES.register("outgoing_damage") {
+        RangedAttribute("attribute.name.rpg_stats.outgoing_damage", 0.0, 0.0, 2.0).setSyncable(true)
+    }
+
     val HARMFUL_EFFECT_DURATION_REDUCTION: RegistryObject<Attribute> = ATTRIBUTES.register("harmful_effect_duration_reduction") {
         RangedAttribute("attribute.name.rpg_stats.harmful_effect_duration_reduction", 0.0, 0.0, 0.25).setSyncable(true)
     }
@@ -58,6 +62,7 @@ object PlayerAttributeRegistration {
         event.add(EntityType.PLAYER, ModAttributes.MINING_SPEED.get())
         event.add(EntityType.PLAYER, ModAttributes.RECOIL_REDUCTION.get())
         event.add(EntityType.PLAYER, ModAttributes.DISPERSION_REDUCTION.get())
+        event.add(EntityType.PLAYER, ModAttributes.OUTGOING_DAMAGE.get())
         event.add(EntityType.PLAYER, ModAttributes.HARMFUL_EFFECT_DURATION_REDUCTION.get())
         event.add(EntityType.PLAYER, ModAttributes.BENEFICIAL_EFFECT_DURATION.get())
     }

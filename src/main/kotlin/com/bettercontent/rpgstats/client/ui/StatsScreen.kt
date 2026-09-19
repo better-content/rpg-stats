@@ -184,6 +184,9 @@ class StatsScreen : Screen(Component.translatable("screen.rpg_stats.title")) {
 
         val actionWidth = 80
         val actionY = layout.footerTop + 4
+        addRenderableWidget(Button.builder(Component.translatable("screen.rpg_stats.auto_plan")) {
+            minecraft?.setScreen(AutoAllocationScreen(this))
+        }.pos(layout.contentX, actionY).size(92, 18).build())
         applyButton = Button.builder(Component.translatable("screen.rpg_stats.apply")) {
             Network.sendToServer(C2SApplyStats(workingAlloc.toMap()))
             onClose()

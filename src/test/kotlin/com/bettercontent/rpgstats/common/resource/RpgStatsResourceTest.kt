@@ -34,7 +34,7 @@ class RpgStatsResourceTest {
 
     private val effects = mapOf(
         "impact" to mapOf(
-            "minecraft:generic.attack_damage" to EffectContract(6.0, "add"),
+            "rpg_stats:outgoing_damage" to EffectContract(0.6, "multiply_base"),
             "epicfight:impact" to EffectContract(0.75, "add", "epicfight"),
             "minecraft:generic.attack_knockback" to EffectContract(0.4, "add")
         ),

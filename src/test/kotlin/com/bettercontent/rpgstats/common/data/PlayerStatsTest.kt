@@ -20,4 +20,19 @@ class PlayerStatsTest {
         assertEquals(0, stats.unspentPoints)
         assertTrue(stats.allocations.isEmpty())
     }
+
+    @Test
+    fun `auto plan serializes separately from Life points`() {
+        val stats = PlayerStats().apply {
+            autoAllocationEnabled = true
+            autoAllocationCursor = 1
+            autoAllocationPlan += listOf("rpg_stats:impact", "rpg_stats:tempo")
+        }
+        val restored = PlayerStats().apply { deserializeNBT(stats.serializeNBT()) }
+
+        assertTrue(restored.autoAllocationEnabled)
+        assertEquals(1, restored.autoAllocationCursor)
+        assertEquals(listOf("rpg_stats:impact", "rpg_stats:tempo"), restored.autoAllocationPlan)
+        assertEquals(0, restored.unspentPoints)
+    }
 }
