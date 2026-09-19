@@ -1,6 +1,8 @@
 package com.bettercontent.rpgstats
 
 import com.bettercontent.rpgstats.common.item.ModItems
+import com.bettercontent.rpgstats.common.block.ModBlocks
+import com.bettercontent.rpgstats.common.block.entity.ModBlockEntities
 import com.bettercontent.rpgstats.common.attribute.ModAttributes
 import com.bettercontent.rpgstats.common.network.Network
 import com.bettercontent.rpgstats.common.sound.ModSounds
@@ -15,6 +17,8 @@ object RpgStatsMod {
         val modBus = KotlinModLoadingContext.get().getKEventBus()
         ModAttributes.register(modBus)
         ModItems.register(modBus)
+        ModBlocks.register(modBus)
+        ModBlockEntities.register(modBus)
         ModSounds.register(modBus)
         Network.init()
         // Everything else is registered via @EventBusSubscriber objects.
