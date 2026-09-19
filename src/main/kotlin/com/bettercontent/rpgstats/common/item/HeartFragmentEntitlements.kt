@@ -7,19 +7,23 @@ import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 /**
- * Durable final-death rewards.  Pending rows and completion receipts live beside a player's
- * inventory in playerdata, so normal player saves commit delivery and receipt together.
+ * Durable final-death rewards. Pending rows live with the inventory in playerdata, so normal
+ * player saves commit fragment insertion and row mutation together. Completed history compacts
+ * to one monotonic watermark; delivery always processes the oldest pending row first.
  */
 object HeartFragmentEntitlements {
     private const val CAPTURE_TAG = "rpg_stats_captured_heart_entitlement"
+    private const val UNRESOLVED_TAG = "rpg_stats_unresolved_heart_entitlement"
     private const val PENDING_TAG = "rpg_stats_pending_heart_fragment_entitlements"
-    private const val COMPLETED_TAG = "rpg_stats_completed_heart_fragment_entitlements"
+    private const val NEXT_SEQUENCE_TAG = "rpg_stats_next_heart_entitlement_sequence"
+    private const val COMPLETED_THROUGH_TAG = "rpg_stats_completed_heart_entitlement_through"
     private const val ID_TAG = "id"
     private const val COUNT_TAG = "count"
+    private const val SEQUENCE_TAG = "sequence"
     private const val LEVEL_TAG = "level"
     private const val LEGACY_PREFIX = "legacy-personalized-heart-v1:"
 
-    data class Entitlement(val id: UUID, val fragments: Long)
+    data class Entitlement(val id: UUID, val fragments: Long, val sequence: Long = 0)
 
     fun captureFinalDeath(data: CompoundTag, heldLevel: Int, id: UUID = UUID.randomUUID()) {
         val capture = CompoundTag()
@@ -40,61 +44,83 @@ object HeartFragmentEntitlements {
             data.remove(CAPTURE_TAG)
             return null
         }
-        val fragments = HeartFragmentData.fragmentsForLevel(capture.getInt(LEVEL_TAG))
+        val fragments = runCatching { HeartFragmentData.fragmentsForLevel(capture.getInt(LEVEL_TAG)) }.getOrElse {
+            // The present stackable long carrier cannot represent this exact result. Preserve the
+            // source UUID and held level for a later carrier migration instead of crashing a
+            // LivingDeathEvent, clamping, or silently discarding value.
+            val unresolved = if (data.contains(UNRESOLVED_TAG, Tag.TAG_LIST.toInt())) {
+                data.getList(UNRESOLVED_TAG, Tag.TAG_COMPOUND.toInt())
+            } else ListTag()
+            unresolved.add(capture.copy())
+            data.put(UNRESOLVED_TAG, unresolved)
+            data.remove(CAPTURE_TAG)
+            return null
+        }
         data.remove(CAPTURE_TAG)
         return Entitlement(id, fragments).takeIf { it.fragments > 0 }
     }
 
-    /** Returns false for a retry/replay of an existing UUID without mutating persistent state. */
+    /** An active UUID can only occupy one pending row. Completed history is a bounded sequence. */
     fun enqueue(data: CompoundTag, entitlement: Entitlement): Boolean {
-        if (entitlement.fragments <= 0 || containsId(data, COMPLETED_TAG, entitlement.id) || containsId(data, PENDING_TAG, entitlement.id)) {
-            return false
-        }
-        val pending = list(data, PENDING_TAG)
-        pending.add(row(entitlement.id, entitlement.fragments))
+        if (entitlement.fragments <= 0 || containsPendingId(data, entitlement.id)) return false
+        val pending = normalizedPending(data)
+        val next = data.getLong(NEXT_SEQUENCE_TAG)
+        require(next < Long.MAX_VALUE) { "Heart entitlement sequence exhausted" }
+        val sequence = next + 1
+        pending.add(row(entitlement.id, entitlement.fragments, sequence))
         data.put(PENDING_TAG, pending)
+        data.putLong(NEXT_SEQUENCE_TAG, sequence)
         return true
     }
 
-    fun pending(data: CompoundTag): List<Entitlement> = (0 until list(data, PENDING_TAG).size).mapNotNull { index ->
-        val row = list(data, PENDING_TAG).getCompound(index)
-        row.uuid(ID_TAG)?.let { id -> Entitlement(id, row.getLong(COUNT_TAG).coerceAtLeast(0)) }
-    }.filter { it.fragments > 0 }
-
-    /** Replaces a pending row after a partial inventory insert, or records its exact receipt. */
-    fun recordDelivery(data: CompoundTag, id: UUID, delivered: Long): Boolean {
-        if (delivered <= 0) return false
-        val pending = list(data, PENDING_TAG)
-        for (index in 0 until pending.size) {
-            val row = pending.getCompound(index)
-            if (row.uuid(ID_TAG) != id) continue
-            val remaining = row.getLong(COUNT_TAG).coerceAtLeast(0)
-            require(delivered <= remaining) { "Cannot deliver more heart fragments than entitlement $id owns" }
-            if (delivered == remaining) {
-                pending.removeAt(index)
-                data.put(PENDING_TAG, pending)
-                list(data, COMPLETED_TAG).also { completed ->
-                    completed.add(row(id, 0))
-                    data.put(COMPLETED_TAG, completed)
-                }
-            } else {
-                row.putLong(COUNT_TAG, remaining - delivered)
-                pending[index] = row
-                data.put(PENDING_TAG, pending)
-            }
-            return true
-        }
-        return false
+    /** Pending rows remain in creation order; only the oldest is eligible to deliver. */
+    fun nextPending(data: CompoundTag): Entitlement? {
+        val pending = normalizedPending(data)
+        if (pending.isEmpty()) return null
+        return pending.getCompound(0).toEntitlement()
     }
 
+    fun pending(data: CompoundTag): List<Entitlement> = (0 until normalizedPending(data).size).mapNotNull { index ->
+        normalizedPending(data).getCompound(index).toEntitlement()
+    }
+
+    /** Replaces the oldest row after a partial insert or advances the bounded receipt watermark. */
+    fun recordDelivery(data: CompoundTag, id: UUID, delivered: Long): Boolean {
+        if (delivered <= 0) return false
+        val pending = normalizedPending(data)
+        if (pending.isEmpty()) return false
+        val row = pending.getCompound(0)
+        if (row.uuid(ID_TAG) != id) return false
+        val remaining = row.getLong(COUNT_TAG).coerceAtLeast(0)
+        require(delivered <= remaining) { "Cannot deliver more heart fragments than entitlement $id owns" }
+        if (delivered == remaining) {
+            val sequence = row.getLong(SEQUENCE_TAG)
+            require(sequence == data.getLong(COMPLETED_THROUGH_TAG) + 1) { "Heart entitlement delivery order is not contiguous" }
+            pending.removeAt(0)
+            data.put(PENDING_TAG, pending)
+            data.putLong(COMPLETED_THROUGH_TAG, sequence)
+        } else {
+            row.putLong(COUNT_TAG, remaining - delivered)
+            pending[0] = row
+            data.put(PENDING_TAG, pending)
+        }
+        return true
+    }
+
+    /** Exposes durable source states for admin recovery when exact count exceeds the current carrier. */
+    fun unresolvedLevels(data: CompoundTag): List<Int> =
+        if (!data.contains(UNRESOLVED_TAG, Tag.TAG_LIST.toInt())) emptyList()
+        else (0 until data.getList(UNRESOLVED_TAG, Tag.TAG_COMPOUND.toInt()).size)
+            .map { index -> data.getList(UNRESOLVED_TAG, Tag.TAG_COMPOUND.toInt()).getCompound(index).getInt(LEVEL_TAG) }
+
     /**
-     * Converts old pending personalized-heart rows exactly once.  The deterministic UUID means a
-     * crash between enqueue and removing the legacy list retries harmlessly on the next login.
+     * Converts old pending personalized-heart rows exactly once. The deterministic UUID means a
+     * crash before legacy-list removal retries the same active row harmlessly on reconnect.
      */
     fun migrateLegacyPending(data: CompoundTag, stacks: List<LegacyHeart>): Int {
         var migrated = 0
         stacks.forEachIndexed { index, legacy ->
-            val fragments = HeartFragmentData.fragmentsForLevel(legacy.level)
+            val fragments = runCatching { HeartFragmentData.fragmentsForLevel(legacy.level) }.getOrNull() ?: return@forEachIndexed
             if (fragments <= 0) return@forEachIndexed
             val id = UUID.nameUUIDFromBytes((LEGACY_PREFIX + index + ':' + legacy.fingerprint).toByteArray(StandardCharsets.UTF_8))
             if (enqueue(data, Entitlement(id, fragments))) migrated += 1
@@ -104,15 +130,45 @@ object HeartFragmentEntitlements {
 
     data class LegacyHeart(val level: Int, val fingerprint: String)
 
-    private fun containsId(data: CompoundTag, key: String, id: UUID): Boolean =
-        (0 until list(data, key).size).any { index -> list(data, key).getCompound(index).uuid(ID_TAG) == id }
+    private fun containsPendingId(data: CompoundTag, id: UUID): Boolean =
+        (0 until normalizedPending(data).size).any { index -> normalizedPending(data).getCompound(index).uuid(ID_TAG) == id }
 
-    private fun list(data: CompoundTag, key: String): ListTag =
-        if (data.contains(key, Tag.TAG_LIST.toInt())) data.getList(key, Tag.TAG_COMPOUND.toInt()) else ListTag()
+    /** Migrates the short-lived UUID receipt-list schema without treating old IDs as rewards. */
+    private fun normalizedPending(data: CompoundTag): ListTag {
+        val pending = list(data)
+        var sequence = maxOf(data.getLong(NEXT_SEQUENCE_TAG), data.getLong(COMPLETED_THROUGH_TAG))
+        var changed = false
+        for (index in 0 until pending.size) {
+            val row = pending.getCompound(index)
+            if (row.getLong(SEQUENCE_TAG) > 0) {
+                sequence = maxOf(sequence, row.getLong(SEQUENCE_TAG))
+                continue
+            }
+            require(sequence < Long.MAX_VALUE) { "Heart entitlement sequence exhausted" }
+            row.putLong(SEQUENCE_TAG, ++sequence)
+            pending[index] = row
+            changed = true
+        }
+        if (changed) data.put(PENDING_TAG, pending)
+        if (sequence != data.getLong(NEXT_SEQUENCE_TAG)) data.putLong(NEXT_SEQUENCE_TAG, sequence)
+        // Prior source revisions retained an ever-growing UUID completion list. Its values are
+        // already materialized inventory delivery, so discard only the obsolete receipt cache.
+        data.remove("rpg_stats_completed_heart_fragment_entitlements")
+        return pending
+    }
 
-    private fun row(id: UUID, count: Long): CompoundTag = CompoundTag().also {
+    private fun list(data: CompoundTag): ListTag =
+        if (data.contains(PENDING_TAG, Tag.TAG_LIST.toInt())) data.getList(PENDING_TAG, Tag.TAG_COMPOUND.toInt()) else ListTag()
+
+    private fun row(id: UUID, count: Long, sequence: Long): CompoundTag = CompoundTag().also {
         it.putString(ID_TAG, id.toString())
         it.putLong(COUNT_TAG, count.coerceAtLeast(0))
+        it.putLong(SEQUENCE_TAG, sequence)
+    }
+
+    private fun CompoundTag.toEntitlement(): Entitlement? = uuid(ID_TAG)?.let { id ->
+        Entitlement(id, getLong(COUNT_TAG).coerceAtLeast(0), getLong(SEQUENCE_TAG))
+            .takeIf { it.fragments > 0 && it.sequence > 0 }
     }
 
     private fun CompoundTag.uuid(key: String): UUID? = runCatching { UUID.fromString(getString(key)) }.getOrNull()

@@ -19,7 +19,7 @@ class HeartFragmentEntitlementsTest {
         assertEquals(124, entitlement.fragments)
         assertTrue(HeartFragmentEntitlements.enqueue(playerData, entitlement))
         assertFalse(HeartFragmentEntitlements.enqueue(playerData, entitlement))
-        assertEquals(listOf(entitlement), HeartFragmentEntitlements.pending(playerData.copy()))
+        assertEquals(listOf(entitlement.copy(sequence = 1)), HeartFragmentEntitlements.pending(playerData.copy()))
     }
 
     @Test
@@ -29,10 +29,11 @@ class HeartFragmentEntitlementsTest {
         assertTrue(HeartFragmentEntitlements.enqueue(playerData, entitlement))
 
         assertTrue(HeartFragmentEntitlements.recordDelivery(playerData, entitlement.id, 64))
-        assertEquals(listOf(entitlement.copy(fragments = 16)), HeartFragmentEntitlements.pending(playerData.copy()))
+        assertEquals(listOf(entitlement.copy(fragments = 16, sequence = 1)), HeartFragmentEntitlements.pending(playerData.copy()))
         assertTrue(HeartFragmentEntitlements.recordDelivery(playerData, entitlement.id, 16))
         assertEquals(emptyList(), HeartFragmentEntitlements.pending(playerData))
-        assertFalse(HeartFragmentEntitlements.enqueue(playerData, entitlement))
+        assertEquals(1, playerData.getLong("rpg_stats_completed_heart_entitlement_through"))
+        assertFalse(playerData.contains("rpg_stats_completed_heart_fragment_entitlements"))
     }
 
     @Test
@@ -44,4 +45,41 @@ class HeartFragmentEntitlementsTest {
         assertEquals(0, HeartFragmentEntitlements.migrateLegacyPending(data, legacy))
         assertEquals(124, HeartFragmentEntitlements.pending(data).single().fragments)
     }
+
+
+    @Test
+    fun `old pending UUID rows compact to ordered watermark schema`() {
+        val data = CompoundTag()
+        val oldRow = CompoundTag()
+        oldRow.putString("id", UUID.randomUUID().toString())
+        oldRow.putLong("count", 7)
+        net.minecraft.nbt.ListTag().also { rows ->
+            rows.add(oldRow)
+            data.put("rpg_stats_pending_heart_fragment_entitlements", rows)
+        }
+        data.put("rpg_stats_completed_heart_fragment_entitlements", net.minecraft.nbt.ListTag())
+
+        assertEquals(1, HeartFragmentEntitlements.nextPending(data)!!.sequence)
+        assertFalse(data.contains("rpg_stats_completed_heart_fragment_entitlements"))
+    }
+
+    @Test
+    fun `cancelled death capture mutates no entitlement state`() {
+        val data = CompoundTag()
+        HeartFragmentEntitlements.captureFinalDeath(data, 20, UUID.randomUUID())
+        HeartFragmentEntitlements.discardCapturedDeath(data)
+
+        assertEquals(emptyList(), HeartFragmentEntitlements.pending(data))
+        assertEquals(null, HeartFragmentEntitlements.finalizeCapturedDeath(data))
+    }
+
+    @Test
+    fun `unrepresentable high level is durably unresolved instead of throwing in death handling`() {
+        val data = CompoundTag()
+        HeartFragmentEntitlements.captureFinalDeath(data, 260, UUID.randomUUID())
+
+        assertEquals(null, HeartFragmentEntitlements.finalizeCapturedDeath(data))
+        assertEquals(listOf(260), HeartFragmentEntitlements.unresolvedLevels(data))
+    }
+
 }

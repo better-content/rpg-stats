@@ -26,7 +26,8 @@
   "item.rpg_stats.still_beating_heart": "Still Beating Heart",
   "item.rpg_stats.heart_fragment": "Heart Fragment",
   "item.rpg_stats.still_beating_heart.tooltip.level": "Stored XP level: %s",
-  "item.rpg_stats.still_beating_heart.tooltip.altar_rate": "Blood Altar generation: %s LP/t",
+  "item.rpg_stats.still_beating_heart.tooltip.convert": "Right-click to convert: %s Heart Fragments",
+  "item.rpg_stats.still_beating_heart.tooltip.convert_unresolved": "Conversion exceeds the current fragment carrier",
 
   "stat.rpg_stats.strength": "Strength",
   "stat.rpg_stats.dexterity": "Dexterity",

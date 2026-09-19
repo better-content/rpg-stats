@@ -163,7 +163,7 @@ object CommonForgeEvents {
         player.persistentData.putBoolean(LOST_ALLOCATION_TAG, (StatsCap.get(player)?.totalAllocated() ?: 0) > 0)
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
     fun onLivingDeath(event: LivingDeathEvent) {
         val player = event.entity as? ServerPlayer ?: return
         if (event.isCanceled) {
@@ -184,7 +184,9 @@ object CommonForgeEvents {
         listOf(
             "rpg_stats_captured_heart_entitlement",
             "rpg_stats_pending_heart_fragment_entitlements",
-            "rpg_stats_completed_heart_fragment_entitlements",
+            "rpg_stats_next_heart_entitlement_sequence",
+            "rpg_stats_completed_heart_entitlement_through",
+            "rpg_stats_unresolved_heart_entitlement",
             LEGACY_PENDING_HEARTS_TAG
         ).forEach { key ->
             if (fromData.contains(key)) {
@@ -215,9 +217,9 @@ object CommonForgeEvents {
 
     private fun deliverPendingFragments(player: ServerPlayer) {
         val data = player.persistentData
-        HeartFragmentEntitlements.pending(data).forEach { entitlement ->
-            var remaining = entitlement.fragments
-            while (remaining > 0) {
+        val entitlement = HeartFragmentEntitlements.nextPending(data) ?: return
+        var remaining = entitlement.fragments
+        while (remaining > 0) {
                 val offered = minOf(64L, remaining).toInt()
                 val stack = ItemStack(ModItems.HEART_FRAGMENT.get(), offered)
                 player.inventory.add(stack)
@@ -227,7 +229,6 @@ object CommonForgeEvents {
                     "Heart entitlement disappeared during delivery: ${entitlement.id}"
                 }
                 remaining -= delivered
-            }
         }
     }
 

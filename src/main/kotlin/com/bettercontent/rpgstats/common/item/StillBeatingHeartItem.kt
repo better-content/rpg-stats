@@ -15,7 +15,8 @@ class StillBeatingHeartItem(properties: Properties) : Item(properties) {
         val stack = player.getItemInHand(hand)
         if (level.isClientSide) return InteractionResultHolder.success(stack)
         val serverPlayer = player as? ServerPlayer ?: return InteractionResultHolder.pass(stack)
-        val fragments = HeartFragmentData.fragmentsForLevel(StillBeatingHeartData.getLevel(stack))
+        val fragments = runCatching { HeartFragmentData.fragmentsForLevel(StillBeatingHeartData.getLevel(stack)) }.getOrNull()
+            ?: return InteractionResultHolder.fail(stack)
         if (fragments <= 0) return InteractionResultHolder.pass(stack)
 
         // The pending row and the consumed legacy item share playerdata, so an inventory-full
@@ -36,10 +37,12 @@ class StillBeatingHeartItem(properties: Properties) : Item(properties) {
 
         val level = StillBeatingHeartData.getLevel(stack)
         tooltip += Component.translatable("item.rpg_stats.still_beating_heart.tooltip.level", level)
-        tooltip += Component.translatable(
-            "item.rpg_stats.still_beating_heart.tooltip.altar_rate",
-            StillBeatingHeartData.lpPerTick(level)
-        )
+        val fragments = runCatching { HeartFragmentData.fragmentsForLevel(level) }.getOrNull()
+        tooltip += if (fragments == null) {
+            Component.translatable("item.rpg_stats.still_beating_heart.tooltip.convert_unresolved")
+        } else {
+            Component.translatable("item.rpg_stats.still_beating_heart.tooltip.convert", fragments)
+        }
     }
 
 }
