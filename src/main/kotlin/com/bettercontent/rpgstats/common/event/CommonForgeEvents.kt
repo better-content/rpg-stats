@@ -218,17 +218,15 @@ object CommonForgeEvents {
     private fun deliverPendingFragments(player: ServerPlayer) {
         val data = player.persistentData
         val entitlement = HeartFragmentEntitlements.nextPending(data) ?: return
-        var remaining = entitlement.fragments
-        while (remaining > 0) {
-                val offered = minOf(64L, remaining).toInt()
-                val stack = ItemStack(ModItems.HEART_FRAGMENT.get(), offered)
-                player.inventory.add(stack)
-                val delivered = (offered - stack.count).toLong()
-                if (delivered <= 0) break
-                check(HeartFragmentEntitlements.recordDelivery(data, entitlement.id, delivered)) {
-                    "Heart entitlement disappeared during delivery: ${entitlement.id}"
-                }
-                remaining -= delivered
+        // One ordinary stack per player tick bounds inventory work even for a very large exact
+        // entitlement; no fragment entities are ever spawned as an overflow fallback.
+        val offered = entitlement.fragments.min(java.math.BigInteger.valueOf(64)).intValueExact()
+        val stack = ItemStack(ModItems.HEART_FRAGMENT.get(), offered)
+        player.inventory.add(stack)
+        val delivered = java.math.BigInteger.valueOf((offered - stack.count).toLong())
+        if (delivered <= java.math.BigInteger.ZERO) return
+        check(HeartFragmentEntitlements.recordDelivery(data, entitlement.id, delivered)) {
+            "Heart entitlement disappeared during delivery: ${entitlement.id}"
         }
     }
 

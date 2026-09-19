@@ -4,6 +4,7 @@ import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.Tag
 import java.nio.charset.StandardCharsets
+import java.math.BigInteger
 import java.util.UUID
 
 /**
@@ -23,7 +24,7 @@ object HeartFragmentEntitlements {
     private const val LEVEL_TAG = "level"
     private const val LEGACY_PREFIX = "legacy-personalized-heart-v1:"
 
-    data class Entitlement(val id: UUID, val fragments: Long, val sequence: Long = 0)
+    data class Entitlement(val id: UUID, val fragments: BigInteger, val sequence: Long = 0)
 
     fun captureFinalDeath(data: CompoundTag, heldLevel: Int, id: UUID = UUID.randomUUID()) {
         val capture = CompoundTag()
@@ -44,7 +45,7 @@ object HeartFragmentEntitlements {
             data.remove(CAPTURE_TAG)
             return null
         }
-        val fragments = runCatching { HeartFragmentData.fragmentsForLevel(capture.getInt(LEVEL_TAG)) }.getOrElse {
+        val fragments = runCatching { HeartFragmentData.fragmentsForLevelBig(capture.getInt(LEVEL_TAG)) }.getOrElse {
             // The present stackable long carrier cannot represent this exact result. Preserve the
             // source UUID and held level for a later carrier migration instead of crashing a
             // LivingDeathEvent, clamping, or silently discarding value.
@@ -57,12 +58,12 @@ object HeartFragmentEntitlements {
             return null
         }
         data.remove(CAPTURE_TAG)
-        return Entitlement(id, fragments).takeIf { it.fragments > 0 }
+        return Entitlement(id, fragments).takeIf { it.fragments > BigInteger.ZERO }
     }
 
     /** An active UUID can only occupy one pending row. Completed history is a bounded sequence. */
     fun enqueue(data: CompoundTag, entitlement: Entitlement): Boolean {
-        if (entitlement.fragments <= 0 || containsPendingId(data, entitlement.id)) return false
+        if (entitlement.fragments <= BigInteger.ZERO || containsPendingId(data, entitlement.id)) return false
         val pending = normalizedPending(data)
         val next = data.getLong(NEXT_SEQUENCE_TAG)
         require(next < Long.MAX_VALUE) { "Heart entitlement sequence exhausted" }
@@ -85,13 +86,13 @@ object HeartFragmentEntitlements {
     }
 
     /** Replaces the oldest row after a partial insert or advances the bounded receipt watermark. */
-    fun recordDelivery(data: CompoundTag, id: UUID, delivered: Long): Boolean {
-        if (delivered <= 0) return false
+    fun recordDelivery(data: CompoundTag, id: UUID, delivered: BigInteger): Boolean {
+        if (delivered <= BigInteger.ZERO) return false
         val pending = normalizedPending(data)
         if (pending.isEmpty()) return false
         val row = pending.getCompound(0)
         if (row.uuid(ID_TAG) != id) return false
-        val remaining = row.getLong(COUNT_TAG).coerceAtLeast(0)
+        val remaining = row.count()
         require(delivered <= remaining) { "Cannot deliver more heart fragments than entitlement $id owns" }
         if (delivered == remaining) {
             val sequence = row.getLong(SEQUENCE_TAG)
@@ -100,7 +101,7 @@ object HeartFragmentEntitlements {
             data.put(PENDING_TAG, pending)
             data.putLong(COMPLETED_THROUGH_TAG, sequence)
         } else {
-            row.putLong(COUNT_TAG, remaining - delivered)
+            row.putString(COUNT_TAG, remaining.subtract(delivered).toString())
             pending[0] = row
             data.put(PENDING_TAG, pending)
         }
@@ -120,8 +121,8 @@ object HeartFragmentEntitlements {
     fun migrateLegacyPending(data: CompoundTag, stacks: List<LegacyHeart>): Int {
         var migrated = 0
         stacks.forEachIndexed { index, legacy ->
-            val fragments = runCatching { HeartFragmentData.fragmentsForLevel(legacy.level) }.getOrNull() ?: return@forEachIndexed
-            if (fragments <= 0) return@forEachIndexed
+            val fragments = runCatching { HeartFragmentData.fragmentsForLevelBig(legacy.level) }.getOrNull() ?: return@forEachIndexed
+            if (fragments <= BigInteger.ZERO) return@forEachIndexed
             val id = UUID.nameUUIDFromBytes((LEGACY_PREFIX + index + ':' + legacy.fingerprint).toByteArray(StandardCharsets.UTF_8))
             if (enqueue(data, Entitlement(id, fragments))) migrated += 1
         }
@@ -160,16 +161,21 @@ object HeartFragmentEntitlements {
     private fun list(data: CompoundTag): ListTag =
         if (data.contains(PENDING_TAG, Tag.TAG_LIST.toInt())) data.getList(PENDING_TAG, Tag.TAG_COMPOUND.toInt()) else ListTag()
 
-    private fun row(id: UUID, count: Long, sequence: Long): CompoundTag = CompoundTag().also {
+    private fun row(id: UUID, count: BigInteger, sequence: Long): CompoundTag = CompoundTag().also {
         it.putString(ID_TAG, id.toString())
-        it.putLong(COUNT_TAG, count.coerceAtLeast(0))
+        it.putString(COUNT_TAG, count.max(BigInteger.ZERO).toString())
         it.putLong(SEQUENCE_TAG, sequence)
     }
 
     private fun CompoundTag.toEntitlement(): Entitlement? = uuid(ID_TAG)?.let { id ->
-        Entitlement(id, getLong(COUNT_TAG).coerceAtLeast(0), getLong(SEQUENCE_TAG))
-            .takeIf { it.fragments > 0 && it.sequence > 0 }
+        Entitlement(id, count(), getLong(SEQUENCE_TAG))
+            .takeIf { it.fragments > BigInteger.ZERO && it.sequence > 0 }
     }
+
+    private fun CompoundTag.count(): BigInteger = runCatching {
+        if (contains(COUNT_TAG, Tag.TAG_STRING.toInt())) BigInteger(getString(COUNT_TAG))
+        else BigInteger.valueOf(getLong(COUNT_TAG))
+    }.getOrDefault(BigInteger.ZERO).max(BigInteger.ZERO)
 
     private fun CompoundTag.uuid(key: String): UUID? = runCatching { UUID.fromString(getString(key)) }.getOrNull()
 }

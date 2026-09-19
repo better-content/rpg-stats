@@ -8,6 +8,14 @@ Players commit Life points irreversibly during a life to eight broad capabilitie
 
 The stat resources use the same portable glyph and CVD-screened color contract as nutrition and pack-authored TConstruct material profiles. The allocation screen keeps all eight capabilities visible in a fixed two-column grid; only the resulting-property list scrolls, and properties with no committed or draft effect are omitted.
 
+
+## Heart fragments
+
+A confirmed final death captures the XP level held at death and records a UUID entitlement. The server calculates `ceil(scale × (2^(level / 4) - 1))`, with the server setting `heart_fragments.entitlement_scale` defaulting to 4. Counts are stored as decimal arbitrary-precision values in playerdata and are inserted as at most one normal 64-item stack per player tick; a full inventory leaves the exact remainder pending.
+
+The carrier supports exact computation through level 4096. A larger level is retained as an explicit unresolved UUID-and-level row instead of crashing, clamping, or discarding the entitlement; it needs a future larger-computation migration before delivery. Pending rows use a monotonic completion watermark, so receipts do not grow with death count.
+
+
 The **Auto plan** editor holds an ordered, persistent per-player list. It can be enabled, paused, reordered, cleared, and edited across deaths or reconnects. Each newly earned point advances one position in the ordered plan. The server validates every entry against active definitions and caps before changing the plan or spending a point; an unavailable or capped choice is skipped and no unearned power is retained.
 
 ## Common commands

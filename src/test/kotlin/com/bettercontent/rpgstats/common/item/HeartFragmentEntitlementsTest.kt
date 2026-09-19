@@ -2,6 +2,7 @@ package com.bettercontent.rpgstats.common.item
 
 import net.minecraft.nbt.CompoundTag
 import java.util.UUID
+import java.math.BigInteger
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -16,7 +17,7 @@ class HeartFragmentEntitlementsTest {
 
         val entitlement = HeartFragmentEntitlements.finalizeCapturedDeath(playerData)!!
         assertEquals(id, entitlement.id)
-        assertEquals(124, entitlement.fragments)
+        assertEquals(BigInteger.valueOf(124), entitlement.fragments)
         assertTrue(HeartFragmentEntitlements.enqueue(playerData, entitlement))
         assertFalse(HeartFragmentEntitlements.enqueue(playerData, entitlement))
         assertEquals(listOf(entitlement.copy(sequence = 1)), HeartFragmentEntitlements.pending(playerData.copy()))
@@ -25,12 +26,12 @@ class HeartFragmentEntitlementsTest {
     @Test
     fun `partial inventory delivery retains only the undistributed amount`() {
         val playerData = CompoundTag()
-        val entitlement = HeartFragmentEntitlements.Entitlement(UUID.randomUUID(), 80)
+        val entitlement = HeartFragmentEntitlements.Entitlement(UUID.randomUUID(), BigInteger.valueOf(80))
         assertTrue(HeartFragmentEntitlements.enqueue(playerData, entitlement))
 
-        assertTrue(HeartFragmentEntitlements.recordDelivery(playerData, entitlement.id, 64))
-        assertEquals(listOf(entitlement.copy(fragments = 16, sequence = 1)), HeartFragmentEntitlements.pending(playerData.copy()))
-        assertTrue(HeartFragmentEntitlements.recordDelivery(playerData, entitlement.id, 16))
+        assertTrue(HeartFragmentEntitlements.recordDelivery(playerData, entitlement.id, BigInteger.valueOf(64)))
+        assertEquals(listOf(entitlement.copy(fragments = BigInteger.valueOf(16), sequence = 1)), HeartFragmentEntitlements.pending(playerData.copy()))
+        assertTrue(HeartFragmentEntitlements.recordDelivery(playerData, entitlement.id, BigInteger.valueOf(16)))
         assertEquals(emptyList(), HeartFragmentEntitlements.pending(playerData))
         assertEquals(1, playerData.getLong("rpg_stats_completed_heart_entitlement_through"))
         assertFalse(playerData.contains("rpg_stats_completed_heart_fragment_entitlements"))
@@ -43,7 +44,7 @@ class HeartFragmentEntitlementsTest {
 
         assertEquals(1, HeartFragmentEntitlements.migrateLegacyPending(data, legacy))
         assertEquals(0, HeartFragmentEntitlements.migrateLegacyPending(data, legacy))
-        assertEquals(124, HeartFragmentEntitlements.pending(data).single().fragments)
+        assertEquals(BigInteger.valueOf(124), HeartFragmentEntitlements.pending(data).single().fragments)
     }
 
 
@@ -78,8 +79,11 @@ class HeartFragmentEntitlementsTest {
         val data = CompoundTag()
         HeartFragmentEntitlements.captureFinalDeath(data, 260, UUID.randomUUID())
 
-        assertEquals(null, HeartFragmentEntitlements.finalizeCapturedDeath(data))
-        assertEquals(listOf(260), HeartFragmentEntitlements.unresolvedLevels(data))
+        val entitlement = HeartFragmentEntitlements.finalizeCapturedDeath(data)!!
+        assertEquals(BigInteger("147573952589676412924"), entitlement.fragments)
+        assertTrue(HeartFragmentEntitlements.enqueue(data, entitlement))
+        assertTrue(HeartFragmentEntitlements.recordDelivery(data, entitlement.id, BigInteger.valueOf(64)))
+        assertEquals(BigInteger("147573952589676412860"), HeartFragmentEntitlements.nextPending(data)!!.fragments)
     }
 
 }
