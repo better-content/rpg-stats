@@ -19,6 +19,11 @@ object ModItems {
         )
     }
 
+    /** Ordinary, stackable final-death entitlement. */
+    val HEART_FRAGMENT: RegistryObject<Item> = ITEMS.register("heart_fragment") {
+        Item(Item.Properties().stacksTo(64).rarity(Rarity.UNCOMMON))
+    }
+
     fun register(bus: IEventBus) {
         ITEMS.register(bus)
     }

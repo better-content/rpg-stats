@@ -24,6 +24,7 @@
   "screen.rpg_stats.current_pending": "Current %s  ·  Pending %s",
 
   "item.rpg_stats.still_beating_heart": "Still Beating Heart",
+  "item.rpg_stats.heart_fragment": "Heart Fragment",
   "item.rpg_stats.still_beating_heart.tooltip.level": "Stored XP level: %s",
   "item.rpg_stats.still_beating_heart.tooltip.altar_rate": "Blood Altar generation: %s LP/t",
 

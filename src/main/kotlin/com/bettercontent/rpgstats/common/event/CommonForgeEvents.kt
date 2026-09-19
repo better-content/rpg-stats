@@ -9,6 +9,7 @@ import com.bettercontent.rpgstats.common.data.PlayerStatsProvider
 import com.bettercontent.rpgstats.common.data.StatsCap
 import com.bettercontent.rpgstats.common.item.ModItems
 import com.bettercontent.rpgstats.common.item.StillBeatingHeartData
+import com.bettercontent.rpgstats.common.item.HeartFragmentData
 import com.bettercontent.rpgstats.common.network.Network
 import com.bettercontent.rpgstats.common.points.PointAwarder
 import com.bettercontent.rpgstats.common.reload.RegistryState
@@ -35,6 +36,7 @@ import net.minecraftforge.fml.common.Mod
 object CommonForgeEvents {
     private const val LOST_ALLOCATION_TAG = "rpg_stats_pending_allocation_loss"
     private const val PENDING_HEARTS_TAG: String = "rpg_stats_pending_hearts"
+    private const val PENDING_FRAGMENT_COUNT_TAG = "rpg_stats_pending_heart_fragments"
 
     @SubscribeEvent
     fun onAttachCaps(event: AttachCapabilitiesEvent<Entity>) {
@@ -94,6 +96,7 @@ object CommonForgeEvents {
     fun onRespawn(event: PlayerEvent.PlayerRespawnEvent) {
         val player = event.entity as? ServerPlayer ?: return
         deliverPendingHearts(player)
+        deliverPendingFragments(player)
     }
 
     @SubscribeEvent
@@ -130,7 +133,7 @@ object CommonForgeEvents {
         val p = event.player
         if (p is ServerPlayer) {
             PointAwarder.tick(p)
-            StillBeatingHeartAltarHandler.discoverNear(p)
+            deliverPendingFragments(p)
         }
     }
 
@@ -138,7 +141,8 @@ object CommonForgeEvents {
     fun onLevelTick(event: TickEvent.LevelTickEvent) {
         if (event.phase != TickEvent.Phase.END || event.level.isClientSide) return
         val level = event.level as? net.minecraft.server.level.ServerLevel ?: return
-        StillBeatingHeartAltarHandler.tickLevel(level)
+        // Heart fragments are installed into the dedicated heart block; the retired altar-slot
+        // item generator must never fill an altar from this global level tick.
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -167,8 +171,8 @@ object CommonForgeEvents {
         if (!StillBeatingHeartAltarHandler.isBloodMagicLoaded()) return
 
         val capturedLevel = StillBeatingHeartData.consumeCapturedDeathLevel(player.persistentData)
-        val heart = StillBeatingHeartData.createForLevel(capturedLevel, ModItems.STILL_BEATING_HEART.get())
-        enqueuePendingHeart(player, heart)
+        val fragments = HeartFragmentData.fragmentsForLevel(capturedLevel)
+        if (fragments > 0) player.persistentData.putLong(PENDING_FRAGMENT_COUNT_TAG, fragments)
     }
 
     private fun transferPendingHearts(from: Player, to: Player) {
@@ -192,6 +196,20 @@ object CommonForgeEvents {
 
         pending.add(heart.save(CompoundTag()))
         data.put(PENDING_HEARTS_TAG, pending)
+    }
+
+    private fun deliverPendingFragments(player: ServerPlayer) {
+        val data = player.persistentData
+        var remaining = data.getLong(PENDING_FRAGMENT_COUNT_TAG)
+        while (remaining > 0) {
+            val offered = minOf(64L, remaining).toInt()
+            val stack = ItemStack(ModItems.HEART_FRAGMENT.get(), offered)
+            if (!player.inventory.add(stack)) break
+            // add() may partially accept in unusual inventory implementations.
+            remaining -= offered - stack.count
+        }
+        if (remaining <= 0) data.remove(PENDING_FRAGMENT_COUNT_TAG)
+        else data.putLong(PENDING_FRAGMENT_COUNT_TAG, remaining)
     }
 
     private fun deliverPendingHearts(player: ServerPlayer) {
