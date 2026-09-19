@@ -14,7 +14,12 @@ object OutgoingDamageScaling {
 
     fun multiplier(player: Player): Float = multiplier(player.getAttributeValue(ModAttributes.OUTGOING_DAMAGE.get()))
 
-    fun multiplier(progress: Double): Float = (1.0 + progress).coerceAtLeast(0.0).toFloat()
+    /** Bounded progression curve: unit slope at zero, with diminishing marginal gain. */
+    fun multiplier(progress: Double): Float {
+        if (progress <= -1.0) return 0.0f
+        val bounded = progress.coerceAtLeast(0.0)
+        return (1.0 + bounded / (1.0 + bounded)).toFloat()
+    }
 
     fun scale(source: DamageSource, target: LivingEntity, amount: Float): Float {
         if (target.level().isClientSide || amount <= 0.0f) return amount
