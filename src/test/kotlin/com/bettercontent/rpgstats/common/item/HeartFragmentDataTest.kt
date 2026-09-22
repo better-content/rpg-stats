@@ -26,4 +26,35 @@ class HeartFragmentDataTest {
         assertEquals(0, HeartFragmentData.lpPerTick(0))
         assertEquals(32, HeartFragmentData.lpPerTick(32))
     }
+
+    @Test fun `developed deaths outperform equal XP shallow deaths including earlier LP`() {
+        // Accounting model from blood-economics.md: earn XP evenly over one hour, with
+        // shallow deaths evenly spaced throughout it; compare LP available through the
+        // end of the following hour. This captures the extra production time from earlier
+        // shallow payouts. Each reward remains installed for the rest of that two-hour window.
+        val ticksPerHour = 20L * 60 * 60
+
+        fun lpInWindow(levels: List<Int>): Long {
+            val shallowDeathInterval = ticksPerHour / levels.size
+            return levels.mapIndexed { index, level ->
+                val fragments = HeartFragmentData.fragmentsForLevel(level)
+                val ticksAvailable = ticksPerHour + (ticksPerHour - (index + 1) * shallowDeathInterval)
+                HeartFragmentData.lpPerTick(fragments) * ticksAvailable
+            }.sum()
+        }
+
+        // Vanilla cumulative XP: L20 = 550 = 10 * L5. L30 = 1395;
+        // 25 * L5 spends 1375 XP, leaving 20 XP unused.
+        val developedL20 = lpInWindow(listOf(20))
+        val repeatedL5ForL20Xp = lpInWindow(List(10) { 5 })
+        assertEquals(8_928_000L, developedL20)
+        assertEquals(6_264_000L, repeatedL5ForL20Xp)
+        assertTrue(developedL20 > repeatedL5ForL20Xp)
+
+        val developedL30 = lpInWindow(listOf(30))
+        val repeatedL5ForL30Xp = lpInWindow(List(25) { 5 })
+        assertEquals(51_912_000L, developedL30)
+        assertEquals(15_984_000L, repeatedL5ForL30Xp)
+        assertTrue(developedL30 > repeatedL5ForL30Xp)
+    }
 }
